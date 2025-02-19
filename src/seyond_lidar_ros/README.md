@@ -25,7 +25,7 @@
 │   ├── test                         // test node code
 │   │   ├── ros1_test.hpp
 │   │   └── ros2_test.hpp
-│   └── inno_sdk                     // seyond sdk
+│   └── seyond_sdk                     // seyond sdk
 ├── package.xml
 ├── CMakeLists.txt
 ├── LICENSE
@@ -40,7 +40,7 @@
  
  2. **Build Seyond SDK**
   ```bash
-  cd seyond_lidar_ros/src/inno_sdk/build
+  cd seyond_lidar_ros/src/seyond_sdk/build
   ./build_unix.sh
   cd -
   ```

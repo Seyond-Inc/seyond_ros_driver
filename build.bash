@@ -3,13 +3,13 @@
 set -e
 
 CURRENT_PATH=$(cd $(dirname $0); pwd)
-CLIENT_SDK_PATH=${CURRENT_PATH}/src/seyond_lidar_ros/src/inno_sdk/
+CLIENT_SDK_PATH=${CURRENT_PATH}/src/seyond_lidar_ros/src/seyond_sdk/
 
 rm -rf ${CURRENT_PATH}/build ${CURRENT_PATH}/install ${CURRENT_PATH}/devel ${CURRENT_PATH}/log
 rm -rf ${CURRENT_PATH}/src/CMakeLists.txt
 
 if [[ -e "${CLIENT_SDK_PATH}/lib/libinnolidarsdkclient.so" ]]; then
-  echo "inno_sdk has already been compiled"
+  echo "seyond_sdk has already been compiled"
 else
   # build cilent sdk
   cd ${CLIENT_SDK_PATH}/build

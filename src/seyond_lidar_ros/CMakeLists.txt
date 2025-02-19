@@ -13,7 +13,7 @@ endif()
 
 add_compile_options(-Ofast)
 
-set(INNO_SDK_PATH src/inno_sdk/)
+set(SEYOND_SDK_PATH src/seyond_sdk/)
 
 #-------------------------------------
 # Point Type (PointXYZI, PointXYZIT)
@@ -73,15 +73,15 @@ if($ENV{ROS_VERSION} MATCHES "2")
   target_include_directories(seyond_node
     PRIVATE
     src/driver
-    ${INNO_SDK_PATH}
-    ${INNO_SDK_PATH}/apps
-    ${INNO_SDK_PATH}/src
+    ${SEYOND_SDK_PATH}
+    ${SEYOND_SDK_PATH}/apps
+    ${SEYOND_SDK_PATH}/src
     ${PCL_INCLUDE_DIRS}
   )
 
   target_link_directories(seyond_node
     PRIVATE
-    ${INNO_SDK_PATH}/lib
+    ${SEYOND_SDK_PATH}/lib
   )
 
   target_link_libraries(seyond_node
@@ -141,7 +141,7 @@ if($ENV{ROS_VERSION} MATCHES "2")
     DESTINATION share/${PROJECT_NAME}
   )
   install(DIRECTORY
-    ${INNO_SDK_PATH}/lib/
+    ${SEYOND_SDK_PATH}/lib/
     DESTINATION lib/${PROJECT_NAME}
   )
 
@@ -175,12 +175,12 @@ if($ENV{ROS_VERSION} MATCHES "1")
   )
   generate_messages(DEPENDENCIES std_msgs)
 
-  SET(INNO_SDK_LIB_DIR ${INNO_SDK_PATH}/lib/)
-  SET(INNO_SDK_INC_DIR ${INNO_SDK_PATH}/src/)
+  SET(SEYOND_SDK_LIB_DIR ${SEYOND_SDK_PATH}/lib/)
+  SET(SEYOND_SDK_INC_DIR ${SEYOND_SDK_PATH}/src/)
 
   include_directories(
     ./
-    ${INNO_SDK_INC_DIR}
+    ${SEYOND_SDK_INC_DIR}
     ${catkin_INCLUDE_DIRS}
   )
 
@@ -190,7 +190,7 @@ if($ENV{ROS_VERSION} MATCHES "1")
   )
 
   link_directories(
-    ${INNO_SDK_LIB_DIR}
+    ${SEYOND_SDK_LIB_DIR}
   )
 
   add_executable(seyond_node
@@ -229,7 +229,7 @@ if($ENV{ROS_VERSION} MATCHES "1")
     LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION})
 
   install(DIRECTORY
-    ${INNO_SDK_PATH}/lib/
+    ${SEYOND_SDK_PATH}/lib/
     DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION})
 
   install(FILES
