@@ -13,9 +13,10 @@ This project is built on the Seyond-SDK and serves as a demonstration for custom
 ├── create_deb.bash                     // create deb script
 ├── doc                                 // documentation
 ├── src
-│   └── seyond_lidar_ros             // seyond ros package
+│   └── seyond_lidar_ros                // seyond ros package
 ├── LICENSE
 ├── CHANGELOG.md
+├── README_CN.md
 └── README.md
 ```
 
@@ -34,9 +35,8 @@ This project is built on the Seyond-SDK and serves as a demonstration for custom
 
 The following official versions are verified to support
 
-|     |     |     |     |
-| --- | --- | --- | --- |
 | Distro | Platform | Release data | EOL data |
+| --- | --- | --- | --- |
 | Melodic | Ubuntu 18.04 | May 23rd, 2018 | June 2023 |
 | Noetic | Ubuntu 20.04 | May 23rd, 2020 | May 2025 |
 | Foxy | Ubuntu 20.04 | June 5th, 2020 | June 2023 |
@@ -59,9 +59,8 @@ please refer to [config.yaml](/src/seyond_lidar_ros/config/config.yaml), support
 
 # ROS Command Line Parameters
 
-|     |     |     |
-| --- | --- | --- |
 | Parameter | Default Value | description |
+| --- | --- | --- |
 | config_path | ""  | config_path, if use this param, other params will become invalid |
 | log_level | info | limit log from lidar, can choose from (info warn error) |
 | replay_rosbag | false | replay rosbag packet flag |

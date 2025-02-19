@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2024 - Seyond Inc.
+ *  Copyright (C) 2025 - Seyond Inc.
  *
  *  All Rights Reserved.
  *

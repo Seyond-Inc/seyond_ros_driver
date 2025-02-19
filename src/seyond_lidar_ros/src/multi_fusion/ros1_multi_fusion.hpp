@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2023 - Innovusion Inc.
+ *  Copyright (C) 2025 - Seyond Inc.
  *
  *  All Rights Reserved.
  *

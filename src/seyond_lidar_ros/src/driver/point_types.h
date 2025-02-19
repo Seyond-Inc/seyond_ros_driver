@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2023 - Innovusion Inc.
+ *  Copyright (C) 2025 - Seyond Inc.
  *
  *  All Rights Reserved.
  *
@@ -11,15 +11,8 @@
 
 namespace seyond {
 
-struct EIGEN_ALIGN16 PointXYZIR {
-  PCL_ADD_POINT4D;                 // quad-word XYZ
-  float intensity;                 // laser intensity reading
-  std::uint16_t ring;              // laser ring number
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW  // ensure proper alignment
-};
-
 struct EIGEN_ALIGN16 PointXYZIT {
-  PCL_ADD_POINT4D;                 // quad-word XYZ
+  PCL_ADD_POINT4D;
   double timestamp;
   std::uint16_t intensity;
   std::uint8_t flags;
@@ -27,17 +20,9 @@ struct EIGEN_ALIGN16 PointXYZIT {
   std::uint16_t scan_id;
   std::uint16_t scan_idx;
   std::uint8_t is_2nd_return;
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW  // ensure proper alignment
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 }  // namespace seyond
-
-POINT_CLOUD_REGISTER_POINT_STRUCT(
-    seyond::PointXYZIR,
-    (float, x, x)
-    (float, y, y)
-    (float, z, z)
-    (float, intensity, intensity)
-    (std::uint16_t, ring, ring))
 
 POINT_CLOUD_REGISTER_POINT_STRUCT(
     seyond::PointXYZIT,

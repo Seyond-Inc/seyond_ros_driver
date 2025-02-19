@@ -12,9 +12,10 @@
 ├── create_deb.bash                     // 打包脚本
 ├── doc                                 // 文档
 ├── src
-│   └── seyond_lidar_ros             // ros包
+│   └── seyond_lidar_ros                // ros包
 ├── LICENSE
 ├── CHANGELOG.md
+├── README_CN.md
 └── README.md
 ```
 
@@ -33,9 +34,8 @@
 
 以下官方版本已经验证支持
 
-|     |     |     |     |
+| 发行版 | 平台 | 发布日期 | EOL日期 |
 | --- | --- | --- | --- |
-| Distro | Platform | Release data | EOL data |
 | Melodic | Ubuntu 18.04 | May 23rd, 2018 | June 2023 |
 | Noetic | Ubuntu 20.04 | May 23rd, 2020 | May 2025 |
 | Foxy | Ubuntu 20.04 | June 5th, 2020 | June 2023 |
@@ -57,9 +57,8 @@ sudo apt-get install -y  libyaml-cpp-dev
 
 # ROS命令行参数介绍
 
-|     |     |     |
-| --- | --- | --- |
 | 参数名 | 默认值 | 描述 |
+| --- | --- | --- |
 | config_path | ""  | 配置输入，如果配置了该项，其他命令行参数将忽视 |
 | log_level | info | 驱动日志输出限制，选项: info warn error |
 | replay_rosbag | false | packet rosbag 回放标志，监听外部的packet_topic数据包并解析 |
