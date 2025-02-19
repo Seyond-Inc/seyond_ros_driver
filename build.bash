@@ -9,7 +9,7 @@ rm -rf ${CURRENT_PATH}/build ${CURRENT_PATH}/install ${CURRENT_PATH}/devel ${CUR
 rm -rf ${CURRENT_PATH}/src/CMakeLists.txt
 
 if [[ -e "${CLIENT_SDK_PATH}/lib/libinnolidarsdkclient.so" ]]; then
-  echo "seyond_sdk has already been compiled"
+  echo "The inno_sdk has already been compiled, but please verify it is compatible with the current platform"
 else
   # build cilent sdk
   cd ${CLIENT_SDK_PATH}/build
