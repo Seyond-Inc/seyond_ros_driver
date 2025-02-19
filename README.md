@@ -66,11 +66,11 @@ please refer to [config.yaml](/src/seyond_lidar_ros/config/config.yaml), support
 | replay_rosbag | false | replay rosbag packet flag |
 | packet_mode | false | packet mode enable |
 | aggregate_num | 20  | aggregate packets num |
-| frame_id | seyond |     |
-| frame_topic | iv_points |     |
-| packet_topic | iv_packets |     |
+| frame_id | seyond | - |
+| frame_topic | iv_points | - |
+| packet_topic | iv_packets | - |
 | lidar_name | seyond | lidar name |
-| lidar_ip | 172.168.1.10 |     |
+| lidar_ip | 172.168.1.10 | - |
 | port | 8010 | tcp port |
 | udp_port | 8010 | udp port |
 | reflectance_mode | true | 0:intensiy mode 1:reflectance mode |
@@ -85,12 +85,12 @@ please refer to [config.yaml](/src/seyond_lidar_ros/config/config.yaml), support
 | name_value_pairs | ""  | some settings of lidar are consistent with the usage of inno_pc_client |
 | coordinate_mode | 3   | convert the xyz direction of a point cloud, x/y/z, 0:up/right/forward 3:forward/left/up |
 | transform_enable | false | transform enable |
-| x   | 0.0 |     |
-| y   | 0.0 |     |
-| z   | 0.0 |     |
-| pitch | 0.0 |     |
-| yaw | 0.0 |     |
-| roll | 0.0 |     |
+| x   | 0.0 | - |
+| y   | 0.0 | - |
+| z   | 0.0 | - |
+| pitch | 0.0 | - |
+| yaw | 0.0 | - |
+| roll | 0.0 | - |
 | transform_matrix | ""  | transform matrix string, if not empty, priority is higher than x/y/z/pitch/yaw/roll |
 
 # Quick start

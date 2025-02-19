@@ -64,11 +64,11 @@ sudo apt-get install -y  libyaml-cpp-dev
 | replay_rosbag | false | packet rosbag 回放标志，监听外部的packet_topic数据包并解析 |
 | packet_mode | false | 启用packet模式，将会开启packet_topic，发布packet数据包 |
 | aggregate_num | 20  | 设置packet模式的包聚合数量 |
-| frame_id | seyond |     |
-| frame_topic | iv_points |     |
-| packet_topic | iv_packets |     |
+| frame_id | seyond | - |
+| frame_topic | iv_points | - |
+| packet_topic | iv_packets | - |
 | lidar_name | seyond | 雷达名，用于区分日志消息 |
-| lidar_ip | 172.168.1.10 |     |
+| lidar_ip | 172.168.1.10 | - |
 | port | 8010 | 雷达源服务端口 |
 | udp_port | 8010 | 雷达端配置的UDP目的端口 |
 | reflectance_mode | true | 反射模式 false:强度模式 true:反射率模式 |
@@ -83,13 +83,13 @@ sudo apt-get install -y  libyaml-cpp-dev
 | name_value_pairs | ""  | 额外配置字符串 |
 | coordinate_mode | 3   | 坐标轴方向, x/y/z, 0:up/right/forward 3:forward/left/up |
 | transform_enable | false | 启用旋转变换参数 |
-| x   | 0.0 |     |
-| y   | 0.0 |     |
-| z   | 0.0 |     |
-| pitch | 0.0 |     |
-| yaw | 0.0 |     |
-| roll | 0.0 |     |
-| transform_matrix | ""  | 变换矩阵字符串，用逗号隔开, 如果非空，优先级高于x/y/z/pitch/yaw/roll |
+| x   | 0.0 | - |
+| y   | 0.0 | - |
+| z   | 0.0 | - |
+| pitch | 0.0 | - |
+| yaw | 0.0 | - |
+| roll | 0.0 | - |
+| transform_matrix | "" | 变换矩阵字符串，用逗号隔开, 如果非空，优先级高于x/y/z/pitch/yaw/roll |
 
 # 快速开始
 
