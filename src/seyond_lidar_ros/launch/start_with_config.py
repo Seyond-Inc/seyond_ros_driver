@@ -5,7 +5,6 @@ from launch.substitutions import LaunchConfiguration
 from launch.actions import SetEnvironmentVariable
 from ament_index_python.packages import get_package_share_directory
 
-# from ament_index_python.packages import get_package_share_directory
 import os
 
 

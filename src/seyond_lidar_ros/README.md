@@ -19,13 +19,13 @@
 │   │   ├── ros1_driver_adapter.hpp
 │   │   ├── ros2_driver_adapter.hpp
 │   │   └── yaml_tools.hpp
-│   ├── multi_fusion                 // for multiple lidars fusion
+│   ├── multi_fusion                    // for multiple lidars fusion
 │   │   ├── ros1_multi_fusion.hpp
 │   │   └── ros2_multi_fusion.hpp
-│   ├── test                         // test node code
+│   ├── test                            // test node code
 │   │   ├── ros1_test.hpp
 │   │   └── ros2_test.hpp
-│   └── seyond_sdk                     // seyond sdk
+│   └── seyond_sdk                      // seyond sdk
 ├── package.xml
 ├── CMakeLists.txt
 ├── LICENSE
