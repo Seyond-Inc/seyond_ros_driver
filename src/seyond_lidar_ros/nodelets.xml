@@ -1,0 +1,9 @@
+<library path="lib/libseyond_node">
+  <class name="seyond/SeyondDriver"
+         type="seyond::SeyondDriver"
+         base_class_type="nodelet::Nodelet">
+    <description>
+      Seyond Lidar Driver Nodelet.
+    </description>
+  </class>
+</library>

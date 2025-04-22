@@ -146,8 +146,13 @@ class ROSAdapter {
 class ROSNode {
  public:
   void init() {
-    nh_ = std::make_shared<ros::NodeHandle>();
-    private_nh_ = std::make_shared<ros::NodeHandle>("~");
+    init(std::make_shared<ros::NodeHandle>(), std::make_shared<ros::NodeHandle>("~"));
+  }
+
+
+  void init(std::shared_ptr<ros::NodeHandle> nh, std::shared_ptr<ros::NodeHandle> private_nh) {
+    nh_ = nh;
+    private_nh_ = private_nh;
     std::string yaml_file;
     private_nh_->param("config_path", yaml_file, std::string(""));
     if (!yaml_file.empty()) {

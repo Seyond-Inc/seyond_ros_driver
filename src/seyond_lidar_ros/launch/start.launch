@@ -65,7 +65,9 @@
   <arg name="transform_matrix" default="" />
 
 
-  <node pkg="seyond" name="seyond" type="seyond_node" output="screen">
+  <node pkg="nodelet" type="nodelet" name="seyond_nodelet" args="manager" output="screen"/>
+  <node pkg="nodelet" type="nodelet" name="SeyondDriver"
+        args="load seyond/SeyondDriver seyond_nodelet" required="true">
     <param name="config_path" value="$(arg config_path)"/>
     <param name="log_level" value="$(arg log_level)"/>
     <param name="replay_rosbag" value="$(arg replay_rosbag)"/>

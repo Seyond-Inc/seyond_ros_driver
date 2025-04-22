@@ -144,6 +144,7 @@ if($ENV{ROS_VERSION} MATCHES "1")
   set(${PROJECT_NAME}_CATKIN_DEPS
     roscpp
     roslib
+    nodelet
     sensor_msgs
     std_msgs
     message_generation
@@ -173,17 +174,16 @@ if($ENV{ROS_VERSION} MATCHES "1")
     ${catkin_INCLUDE_DIRS}
   )
 
-  catkin_package(
-    CATKIN_DEPENDS ${${PROJECT_NAME}_CATKIN_DEPS}
-    INCLUDE_DIRS node
+  catkin_package(CATKIN_DEPENDS 
+    ${${PROJECT_NAME}_CATKIN_DEPS}
   )
 
   link_directories(
     ${SEYOND_SDK_LIB_DIR}
   )
 
-  add_executable(seyond_node
-    node/seyond_node.cc
+  add_library(seyond_node
+    node/seyond_nodelet.cc
     src/driver/driver_lidar.cc
   )
 
@@ -229,6 +229,7 @@ if($ENV{ROS_VERSION} MATCHES "1")
 
   install(FILES
     config/config.yaml
+    nodelets.xml
     DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION})
 
 endif($ENV{ROS_VERSION} MATCHES "1")

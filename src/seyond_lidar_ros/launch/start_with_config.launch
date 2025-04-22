@@ -6,7 +6,9 @@
   <arg name="config_path" default="$(find seyond)/config.yaml" />
 
 
-  <node pkg="seyond" name="seyond" type="seyond_node" output="screen">
+  <node pkg="nodelet" type="nodelet" name="seyond_nodelet" args="manager" output="screen"/>
+  <node pkg="nodelet" type="nodelet" name="SeyondDriver"
+        args="load seyond/SeyondDriver seyond_nodelet" required="true">
     <param name="config_path" value="$(arg config_path)"/>
   </node>
   <!-- rviz -->
