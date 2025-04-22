@@ -159,10 +159,14 @@ class ROSAdapter {
 class ROSNode {
  public:
   void init() {
-    node_ptr_ = rclcpp::Node::make_shared("seyond", rclcpp::NodeOptions()
-                                                        .allow_undeclared_parameters(true)
-                                                        .automatically_declare_parameters_from_overrides(true)
-                                                        .use_intra_process_comms(true));
+    init(rclcpp::Node::make_shared("seyond", rclcpp::NodeOptions()
+                                                  .allow_undeclared_parameters(true)
+                                                  .automatically_declare_parameters_from_overrides(true)
+                                                  .use_intra_process_comms(true)));
+  }
+
+  void init(std::shared_ptr<rclcpp::Node> node) {
+    node_ptr_ = node;
     std::string yaml_file;
     node_ptr_->get_parameter_or<std::string>("config_path", yaml_file, "");
     if (!yaml_file.empty()) {

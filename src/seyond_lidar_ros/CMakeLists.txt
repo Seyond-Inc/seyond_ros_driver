@@ -37,6 +37,7 @@ if($ENV{ROS_VERSION} MATCHES "2")
   # find dependencies
   find_package(ament_cmake REQUIRED)
   find_package(rclcpp REQUIRED)
+  find_package(rclcpp_components REQUIRED)
   find_package(std_msgs REQUIRED)
   find_package(sensor_msgs REQUIRED)
   find_package(PCL REQUIRED)
@@ -56,9 +57,13 @@ if($ENV{ROS_VERSION} MATCHES "2")
   include_directories(./)
 
   # seyond_node
-  add_executable(seyond_node
-    node/seyond_node.cc
+  add_library(seyond_node SHARED
+    node/seyond_component.cc
     src/driver/driver_lidar.cc
+  )
+
+  rclcpp_components_register_nodes(seyond_node
+    "seyond::SeyondDriver"
   )
 
   rosidl_target_interfaces(seyond_node ${PROJECT_NAME} "rosidl_typesupport_cpp")
@@ -87,6 +92,7 @@ if($ENV{ROS_VERSION} MATCHES "2")
 
   ament_target_dependencies(seyond_node
     rclcpp
+    rclcpp_components
     PCL
     std_msgs
     sensor_msgs
@@ -116,6 +122,9 @@ if($ENV{ROS_VERSION} MATCHES "2")
   # install group
   install(TARGETS
     seyond_node
+    DESTINATION lib/
+  )
+  install(TARGETS
     seyond_test
     DESTINATION lib/${PROJECT_NAME}
   )
