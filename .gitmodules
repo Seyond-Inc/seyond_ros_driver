@@ -1,0 +1,3 @@
+[submodule "src/seyond_lidar_ros/src/seyond_lite_sdk"]
+	path = src/seyond_lidar_ros/src/seyond_lite_sdk
+	url = https://github.com/Seyond-Inc/seyond-lite-sdk.git
