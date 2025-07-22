@@ -1,3 +1,0 @@
-[submodule "src/seyond_lidar_ros/src/seyond_sdk"]
-	path = src/seyond_lidar_ros/src/seyond_sdk
-	url = https://github.com/Seyond-Inc/inno-lidar-sdk.git
