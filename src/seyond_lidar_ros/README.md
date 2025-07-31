@@ -13,8 +13,7 @@
 ├── rviz                                // rviz config file
 ├── src
 │   ├── driver
-│   │   ├── driver_lidar.cc
-│   │   ├── driver_lidar.h
+│   │   ├── driver_wrapper.hpp
 │   │   ├── point_types.h
 │   │   ├── ros1_driver_adapter.hpp
 │   │   ├── ros2_driver_adapter.hpp

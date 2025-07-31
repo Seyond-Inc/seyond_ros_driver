@@ -15,7 +15,7 @@
 #include <cmath>
 #include <iostream>
 
-#include "driver_lidar.h"
+#include "driver_wrapper.hpp"
 
 namespace seyond {
 
@@ -71,7 +71,7 @@ class YamlTools {
 
         tmp_config.max_range = lidar_config["lidar"]["max_range"].as<double>(2000.0);
         tmp_config.min_range = lidar_config["lidar"]["min_range"].as<double>(0.4);
-        tmp_config.name_value_pairs = lidar_config["lidar"]["name_value_pairs"].as<std::string>("");
+        // tmp_config.name_value_pairs = lidar_config["lidar"]["name_value_pairs"].as<std::string>("");
         tmp_config.coordinate_mode = lidar_config["lidar"]["coordinate_mode"].as<int32_t>(3);
 
         tmp_config.transform_enable = lidar_config["lidar"]["transform_enable"].as<bool>(false);
@@ -93,7 +93,7 @@ class YamlTools {
 
   static void printConfig(std::vector<LidarConfig>& lidar_configs) {
     for (auto lidar_config : lidar_configs) {
-      inno_log_info(
+      SY_LOG_INFO(
       "\n\treplay_rosbag: %d\n"
       "\tpacket_mode: %d\n"
       "\taggregate_num: %d\n"
@@ -113,7 +113,7 @@ class YamlTools {
       "\tfile_rewind: %d\n"
       "\tmax_range: %f\n"
       "\tmin_range: %f\n"
-      "\tname_value_pairs: %s\n"
+      // "\tname_value_pairs: %s\n"
       "\tcoordinate_mode: %d\n"
       "\ttransform_enable: %d\n"
       "\tx: %f\n"
@@ -129,7 +129,7 @@ class YamlTools {
       lidar_config.reflectance_mode, lidar_config.multiple_return, lidar_config.continue_live,
       lidar_config.pcap_file.c_str(), lidar_config.hv_table_file.c_str(),
       lidar_config.packet_rate, lidar_config.file_rewind, lidar_config.max_range,
-      lidar_config.min_range, lidar_config.name_value_pairs.c_str(), lidar_config.coordinate_mode,
+      lidar_config.min_range, lidar_config.coordinate_mode,
       lidar_config.transform_enable, lidar_config.x, lidar_config.y, lidar_config.z, lidar_config.pitch,
       lidar_config.yaw, lidar_config.roll, lidar_config.transform_matrix.c_str());
     }

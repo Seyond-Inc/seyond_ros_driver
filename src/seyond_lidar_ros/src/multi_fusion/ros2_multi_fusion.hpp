@@ -17,7 +17,7 @@
 #include <sensor_msgs/msg/point_cloud2.hpp>
 
 #include "src/driver/point_types.h"
-#include "src/driver/driver_lidar.h"
+#include "src/driver/driver_wrapper.hpp"
 
 namespace seyond {
 
@@ -118,7 +118,7 @@ MultiFusion::~MultiFusion() {
 
 void MultiFusion::callback_2(const sensor_msgs::msg::PointCloud2::ConstSharedPtr& cloud1_msg,
                              const sensor_msgs::msg::PointCloud2::ConstSharedPtr& cloud2_msg) {
-  pcl::PointCloud<SeyondPoint> merged_cloud, cloud1, cloud2;
+  pcl::PointCloud<seyond::PointXYZIT> merged_cloud, cloud1, cloud2;
   pcl::fromROSMsg(*cloud1_msg, cloud1);
   pcl::fromROSMsg(*cloud2_msg, cloud2);
 
@@ -133,7 +133,7 @@ void MultiFusion::callback_2(const sensor_msgs::msg::PointCloud2::ConstSharedPtr
 void MultiFusion::callback_3(const sensor_msgs::msg::PointCloud2::ConstSharedPtr& cloud1_msg,
                              const sensor_msgs::msg::PointCloud2::ConstSharedPtr& cloud2_msg,
                              const sensor_msgs::msg::PointCloud2::ConstSharedPtr& cloud3_msg) {
-  pcl::PointCloud<SeyondPoint> merged_cloud, cloud1, cloud2, cloud3;
+  pcl::PointCloud<seyond::PointXYZIT> merged_cloud, cloud1, cloud2, cloud3;
   pcl::fromROSMsg(*cloud1_msg, cloud1);
   pcl::fromROSMsg(*cloud2_msg, cloud2);
   pcl::fromROSMsg(*cloud3_msg, cloud3);
@@ -151,7 +151,7 @@ void MultiFusion::callback_4(const sensor_msgs::msg::PointCloud2::ConstSharedPtr
                              const sensor_msgs::msg::PointCloud2::ConstSharedPtr& cloud2_msg,
                              const sensor_msgs::msg::PointCloud2::ConstSharedPtr& cloud3_msg,
                              const sensor_msgs::msg::PointCloud2::ConstSharedPtr& cloud4_msg) {
-  pcl::PointCloud<SeyondPoint> merged_cloud, cloud1, cloud2, cloud3, cloud4;
+  pcl::PointCloud<seyond::PointXYZIT> merged_cloud, cloud1, cloud2, cloud3, cloud4;
   pcl::fromROSMsg(*cloud1_msg, cloud1);
   pcl::fromROSMsg(*cloud2_msg, cloud2);
   pcl::fromROSMsg(*cloud3_msg, cloud3);
@@ -172,7 +172,7 @@ void MultiFusion::callback_5(const sensor_msgs::msg::PointCloud2::ConstSharedPtr
                              const sensor_msgs::msg::PointCloud2::ConstSharedPtr& cloud3_msg,
                              const sensor_msgs::msg::PointCloud2::ConstSharedPtr& cloud4_msg,
                              const sensor_msgs::msg::PointCloud2::ConstSharedPtr& cloud5_msg) {
-  pcl::PointCloud<SeyondPoint> merged_cloud, cloud1, cloud2, cloud3, cloud4, cloud5;
+  pcl::PointCloud<seyond::PointXYZIT> merged_cloud, cloud1, cloud2, cloud3, cloud4, cloud5;
   pcl::fromROSMsg(*cloud1_msg, cloud1);
   pcl::fromROSMsg(*cloud2_msg, cloud2);
   pcl::fromROSMsg(*cloud3_msg, cloud3);

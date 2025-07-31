@@ -13,7 +13,7 @@ endif()
 
 add_compile_options(-Ofast)
 
-set(SEYOND_SDK_PATH src/seyond_sdk/)
+set(SEYOND_SDK_PATH src/seyond_lite_sdk/)
 
 #-------------------------------------
 # Point Type (PointXYZI, PointXYZIT)
@@ -58,7 +58,6 @@ if($ENV{ROS_VERSION} MATCHES "2")
   # seyond_node
   add_executable(seyond_node
     node/seyond_node.cc
-    src/driver/driver_lidar.cc
   )
 
   rosidl_target_interfaces(seyond_node ${PROJECT_NAME} "rosidl_typesupport_cpp")
@@ -67,20 +66,10 @@ if($ENV{ROS_VERSION} MATCHES "2")
     PRIVATE
     src/driver
     ${SEYOND_SDK_PATH}
-    ${SEYOND_SDK_PATH}/apps
-    ${SEYOND_SDK_PATH}/src
     ${PCL_INCLUDE_DIRS}
   )
 
-  target_link_directories(seyond_node
-    PRIVATE
-    ${SEYOND_SDK_PATH}/lib
-  )
-
   target_link_libraries(seyond_node
-    innolidarsdkclient.a
-    innolidarsdkcommon.a
-    innolidarutils.a
     ${PCL_LIBRARIES}
     ${YAML_CPP_LIBRARIES}
   )
@@ -164,12 +153,10 @@ if($ENV{ROS_VERSION} MATCHES "1")
   )
   generate_messages(DEPENDENCIES std_msgs)
 
-  SET(SEYOND_SDK_LIB_DIR ${SEYOND_SDK_PATH}/lib/)
-  SET(SEYOND_SDK_INC_DIR ${SEYOND_SDK_PATH}/src/)
-
   include_directories(
     ./
-    ${SEYOND_SDK_INC_DIR}
+    src/driver
+    ${SEYOND_SDK_PATH}
     ${catkin_INCLUDE_DIRS}
   )
 
@@ -177,13 +164,8 @@ if($ENV{ROS_VERSION} MATCHES "1")
     ${${PROJECT_NAME}_CATKIN_DEPS}
   )
 
-  link_directories(
-    ${SEYOND_SDK_LIB_DIR}
-  )
-
   add_executable(seyond_node
     node/seyond_node.cc
-    src/driver/driver_lidar.cc
   )
 
   add_dependencies(seyond_node seyond_generate_messages_cpp)
@@ -192,9 +174,6 @@ if($ENV{ROS_VERSION} MATCHES "1")
   target_link_libraries(seyond_node
     ${catkin_LIBRARIES}
     ${YAML_CPP_LIBRARIES}
-    innolidarsdkclient.a
-    innolidarsdkcommon.a
-    innolidarutils.a
   )
 
   # seyond_test

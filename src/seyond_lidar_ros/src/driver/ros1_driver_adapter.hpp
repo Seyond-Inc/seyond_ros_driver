@@ -11,6 +11,7 @@
 #include <pcl_conversions/pcl_conversions.h>
 #include <ros/ros.h>
 #include <sensor_msgs/PointCloud2.h>
+#include <sensor_msgs/point_cloud2_iterator.h>
 #include <std_msgs/Float64.h>
 
 #include <limits>
@@ -19,11 +20,63 @@
 #include <utility>
 #include <vector>
 
-#include "driver_lidar.h"
+#include "driver_wrapper.hpp"
 #include "yaml_tools.hpp"
 #include "seyond/SeyondPacket.h"
 #include "seyond/SeyondScan.h"
 #include "src/multi_fusion/ros1_multi_fusion.hpp"
+
+sensor_msgs::PointCloud2 toRosMsg(const seyond::LidarPointCloud<seyond::LidarPoint> &pc, const std::string& frame_id) {
+  sensor_msgs::PointCloud2 ros_msg;
+  int fields = 6;  // x, y, z, intensity, ring, timestamp
+  ros_msg.fields.clear();
+  ros_msg.fields.reserve(fields);
+  ros_msg.height = 1;
+  ros_msg.width = pc.points.size();
+
+  int offset = 0;
+  offset = addPointField(ros_msg, "x", 1, sensor_msgs::PointField::FLOAT32, offset);
+  offset = addPointField(ros_msg, "y", 1, sensor_msgs::PointField::FLOAT32, offset);
+  offset = addPointField(ros_msg, "z", 1, sensor_msgs::PointField::FLOAT32, offset);
+  offset = addPointField(ros_msg, "intensity", 1, sensor_msgs::PointField::UINT8, offset);
+  offset = addPointField(ros_msg, "ring", 1, sensor_msgs::PointField::UINT16, offset);
+  offset = addPointField(ros_msg, "timestamp", 1, sensor_msgs::PointField::FLOAT64, offset);
+
+  ros_msg.point_step = offset;
+  ros_msg.row_step = ros_msg.point_step * ros_msg.width;
+  // ros_msg.is_dense = true;
+  ros_msg.data.resize(ros_msg.row_step);
+
+  sensor_msgs::PointCloud2Iterator<float> iter_x_(ros_msg, "x");
+  sensor_msgs::PointCloud2Iterator<float> iter_y_(ros_msg, "y");
+  sensor_msgs::PointCloud2Iterator<float> iter_z_(ros_msg, "z");
+  sensor_msgs::PointCloud2Iterator<uint8_t> iter_intensity_(ros_msg, "intensity");
+  sensor_msgs::PointCloud2Iterator<uint16_t> iter_ring_(ros_msg, "ring");
+  sensor_msgs::PointCloud2Iterator<double> iter_timestamp_(ros_msg, "timestamp");
+
+
+  for (size_t i = 0; i < pc.points.size(); i++) {
+    const auto &point = pc.points[i];
+    *iter_x_ = point.x;
+    *iter_y_ = point.y;
+    *iter_z_ = point.z;
+    *iter_intensity_ = point.intensity;
+    *iter_ring_ = point.scan_id;  // Assuming scan_id is used as ring
+    *iter_timestamp_ = point.timestamp;
+
+    ++iter_x_;
+    ++iter_y_;
+    ++iter_z_;
+    ++iter_intensity_;
+    ++iter_ring_;
+    ++iter_timestamp_;
+  }
+  ros_msg.header.frame_id = frame_id;
+  ros_msg.header.stamp = ros_msg.header.stamp.fromSec(pc.timestamp);
+  ros_msg.header.seq = pc.index;
+
+  return ros_msg;
+}
 
 class ROSAdapter {
  public:
@@ -31,65 +84,52 @@ class ROSAdapter {
              const seyond::LidarConfig &lidar_config) {
     nh_ = nh;
     private_nh_ = private_nh;
-    driver_ptr_ = std::make_unique<seyond::DriverLidar>(lidar_config);
+    ros_driver_ptr_ = std::make_unique<seyond::ROSDriver>(lidar_config);
     inno_scan_msg_ = std::make_unique<seyond::SeyondScan>();
     lidar_config_ = lidar_config;
   }
 
   ~ROSAdapter() {
-    driver_ptr_.reset();
+    ros_driver_ptr_.reset();
   }
 
   void init() {
     inno_frame_pub_ = nh_->advertise<sensor_msgs::PointCloud2>(lidar_config_.frame_topic.c_str(), 10);
-    driver_ptr_->register_publish_frame_callback(
-        std::bind(&ROSAdapter::publishFrame, this, std::placeholders::_1, std::placeholders::_2));
+    ros_driver_ptr_->register_publish_frame_callback(
+        std::bind(&ROSAdapter::publishFrame, this, std::placeholders::_1));
 
     if (lidar_config_.packet_mode || lidar_config_.replay_rosbag) {
       inno_pkt_pub_ = nh_->advertise<seyond::SeyondScan>(lidar_config_.packet_topic.c_str(), 100);
       inno_pkt_sub_ = nh_->subscribe(lidar_config_.packet_topic.c_str(), 100, &ROSAdapter::subscribePacket, this);
-      driver_ptr_->register_publish_packet_callback(std::bind(&ROSAdapter::publishPacket, this, std::placeholders::_1,
-                                                              std::placeholders::_2, std::placeholders::_3,
-                                                              std::placeholders::_4));
+      ros_driver_ptr_->register_publish_packet_callback(std::bind(
+          &ROSAdapter::publishPacket, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
     }
   }
 
   void start() {
-    driver_ptr_->start_lidar();
+    ros_driver_ptr_->start();
   }
 
   void stop() {
-    driver_ptr_->stop_lidar();
+    ros_driver_ptr_->stop();
   }
 
  private:
   void subscribePacket(const seyond::SeyondScan::ConstPtr &msg) {
     for (const auto &pkt : msg->packets) {
-      if (lidar_config_.replay_rosbag && pkt.has_table && !driver_ptr_->anglehv_table_init_) {
-        driver_ptr_->anglehv_table_.resize(pkt.table.size());
-        std::memcpy(driver_ptr_->anglehv_table_.data(), pkt.table.data(), pkt.table.size());
-        driver_ptr_->anglehv_table_init_ = true;
+      if (lidar_config_.replay_rosbag && pkt.has_table && !ros_driver_ptr_->anglehv_table_init_) {
+        // ros_driver_ptr_->anglehv_table_.resize(pkt.table.size());
+        // std::memcpy(ros_driver_ptr_->anglehv_table_.data(), pkt.table.data(), pkt.table.size());
+        ros_driver_ptr_->anglehv_table_init_ = true;
       }
-      driver_ptr_->convert_and_parse(reinterpret_cast<const int8_t *>(pkt.data.data()));
-    }
-
-    if (msg->is_last_scan) {
-      sensor_msgs::PointCloud2 ros_msg;
-      driver_ptr_->transform_pointcloud();
-      pcl::toROSMsg(*driver_ptr_->pcl_pc_ptr, ros_msg);
-      ros_msg.header.frame_id = lidar_config_.frame_id;
-      ros_msg.header.stamp = ros::Time().fromSec(msg->timestamp * 1e-6);
-      ros_msg.width = driver_ptr_->pcl_pc_ptr->width;
-      ros_msg.height = driver_ptr_->pcl_pc_ptr->height;
-      inno_frame_pub_.publish(std::move(ros_msg));
-      driver_ptr_->pcl_pc_ptr->clear();
+      ros_driver_ptr_->parsePacket(pkt.data.data(), pkt.data.size());
     }
   }
 
-  void publishPacket(const int8_t *pkt, uint64_t pkt_len, double timestamp, bool next_idx) {
+  void publishPacket(const uint8_t *pkt, uint64_t pkt_len, bool next_idx) {
     if (next_idx) {
       frame_count_++;
-      inno_scan_msg_->timestamp = timestamp;
+      // inno_scan_msg_->timestamp = timestamp;
       inno_scan_msg_->size = packets_width_;
       packets_width_ = 0;
       inno_scan_msg_->is_last_scan = true;
@@ -106,31 +146,25 @@ class ROSAdapter {
     msg.data.resize(pkt_len);
     std::memcpy(msg.data.data(), pkt, pkt_len);
     msg.has_table = false;
-    if ((frame_count_ == table_send_hz_) && driver_ptr_->anglehv_table_init_) {
+    if (frame_count_ == table_send_hz_) {
       frame_count_ = 0;
-      msg.has_table = true;
-      msg.table.resize(driver_ptr_->anglehv_table_.size());
-      std::memcpy(msg.table.data(), driver_ptr_->anglehv_table_.data(), driver_ptr_->anglehv_table_.size());
+      // msg.has_table = true;
+      // msg.table.resize(ros_driver_ptr_->anglehv_table_.size());
+      // std::memcpy(msg.table.data(), ros_driver_ptr_->anglehv_table_.data(), ros_driver_ptr_->anglehv_table_.size());
     }
     packets_width_++;
     inno_scan_msg_->packets.emplace_back(msg);
   }
 
-  void publishFrame(const pcl::PointCloud<SeyondPoint> &frame, double timestamp) {
-    sensor_msgs::PointCloud2 ros_msg;
-    pcl::toROSMsg(frame, ros_msg);
-    ros_msg.header.frame_id = lidar_config_.frame_id;
-    ros_msg.header.stamp = ros::Time().fromSec(timestamp * 1e-6);
-    ros_msg.width = frame.width;
-    ros_msg.height = frame.height;
-    inno_frame_pub_.publish(std::move(ros_msg));
+  void publishFrame(std::shared_ptr<seyond::LidarPointCloud<seyond::LidarPoint>> frame) {
+    inno_frame_pub_.publish(std::move(toRosMsg(*frame, lidar_config_.frame_id)));
   }
 
  private:
   seyond::LidarConfig lidar_config_;
   std::shared_ptr<ros::NodeHandle> nh_;
   std::shared_ptr<ros::NodeHandle> private_nh_;
-  std::unique_ptr<seyond::DriverLidar> driver_ptr_;
+  std::unique_ptr<seyond::ROSDriver> ros_driver_ptr_;
 
   ros::Publisher inno_frame_pub_;
   ros::Publisher inno_pkt_pub_;
@@ -163,7 +197,10 @@ class ROSNode {
     lidar_num_ = lidar_configs_.size();
     ros_adapters_.resize(lidar_num_);
 
-    seyond::DriverLidar::init_log_s(common_config_.log_level, &ROSNode::rosLogCallback);
+    seyond::Logger::getInstance().setLogLevel(seyond::LogLevel::LOG_LEVEL_DEBUG);
+    seyond::Logger::getInstance().setLogCallback(std::bind(&ROSNode::rosLogCallback, std::placeholders::_1,
+                                                           std::placeholders::_2, std::placeholders::_3,
+                                                           std::placeholders::_4, std::placeholders::_5));
     seyond::YamlTools::printConfig(lidar_configs_);
 
 
@@ -215,7 +252,6 @@ class ROSNode {
 
     private_nh_->param("max_range", lidar_config.max_range, 2000.0);  // unit: meter
     private_nh_->param("min_range", lidar_config.min_range, 0.4);     // unit: meter
-    private_nh_->param("name_value_pairs", lidar_config.name_value_pairs, std::string(""));
     private_nh_->param("coordinate_mode", lidar_config.coordinate_mode, 3);
 
     private_nh_->param("transform_enable", lidar_config.transform_enable, false);
@@ -234,27 +270,24 @@ class ROSNode {
     ros::spin();
   }
 
-  static void rosLogCallback(int32_t level, const char *header2, const char *msg) {
+  static void rosLogCallback(enum seyond::LogLevel level, const char *file, int line, const char *function,
+                             const char *msg) {
     switch (level) {
-      case 0:  // INNO_LOG_LEVEL_FATAL
-      case 1:  // INNO_LOG_LEVEL_CRITICAL
-        ROS_FATAL("%s %s", header2, msg);
+      case seyond::LOG_LEVEL_CRITICAL:
+        ROS_FATAL("<%s:%d>: %s", file, line, msg);
         break;
-      case 2:  // INNO_LOG_LEVEL_ERROR
-      case 3:  // INNO_LOG_LEVEL_TEMP
-        ROS_ERROR("%s %s", header2, msg);
+      case seyond::LOG_LEVEL_ERROR:
+        ROS_ERROR("<%s:%d>: %s", file, line, msg);
         break;
-      case 4:  // INNO_LOG_LEVEL_WARNING
-      case 5:  // INNO_LOG_LEVEL_DEBUG
-        ROS_WARN("%s %s", header2, msg);
+      case seyond::LOG_LEVEL_WARN:
+        ROS_WARN("<%s:%d>: %s", file, line, msg);
         break;
-      case 6:  // INNO_LOG_LEVEL_INFO
-        ROS_INFO("%s %s", header2, msg);
+      case seyond::LOG_LEVEL_INFO:
+        ROS_INFO("<%s:%d>: %s", file, line, msg);
         break;
-      case 7:  // INNO_LOG_LEVEL_TRACE
-      case 8:  // INNO_LOG_LEVEL_DETAIL
+      case seyond::LOG_LEVEL_DEBUG:
       default:
-        ROS_DEBUG("%s %s", header2, msg);
+        ROS_DEBUG("<%s:%d>: %s", file, line, msg);
     }
   }
 

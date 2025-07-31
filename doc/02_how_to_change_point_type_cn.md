@@ -33,7 +33,7 @@ set(POINT_TYPE PointXYZIT)
 
 请参考point_types.h中的定义
 
-关注并修改src/driver/下的 driver_lidar.h、driver_lidar.cc两个文件内容
+关注并修改src/driver/下的 driver_wrapper.hpp文件内容
 
 ```c++
 #ifdef ENABLE_XYZIT
