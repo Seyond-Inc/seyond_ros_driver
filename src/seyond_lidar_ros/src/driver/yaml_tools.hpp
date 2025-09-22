@@ -61,6 +61,7 @@ class YamlTools {
         tmp_config.udp_port = lidar_config["lidar"]["udp_port"].as<int32_t>(8010);
         tmp_config.reflectance_mode = lidar_config["lidar"]["reflectance_mode"].as<bool>(true);
         tmp_config.multiple_return = lidar_config["lidar"]["multiple_return"].as<int32_t>(1);
+        tmp_config.enable_falcon_ring = lidar_config["lidar"]["enable_falcon_ring"].as<bool>(false);
 
         tmp_config.continue_live = lidar_config["lidar"]["continue_live"].as<bool>(false);
 
@@ -106,6 +107,7 @@ class YamlTools {
       "\tudp_port: %d\n"
       "\treflectance_mode: %d\n"
       "\tmultiple_return: %d\n"
+      "\tenable_falcon_ring: %d\n"
       "\tcontinue_live: %d\n"
       "\tpcap_file: %s\n"
       "\thv_table_file: %s\n"
@@ -126,7 +128,8 @@ class YamlTools {
       lidar_config.replay_rosbag, lidar_config.packet_mode, lidar_config.aggregate_num,
       lidar_config.frame_id.c_str(), lidar_config.packet_topic.c_str(), lidar_config.frame_topic.c_str(),
       lidar_config.lidar_name.c_str(), lidar_config.lidar_ip.c_str(), lidar_config.port, lidar_config.udp_port,
-      lidar_config.reflectance_mode, lidar_config.multiple_return, lidar_config.continue_live,
+      lidar_config.reflectance_mode, lidar_config.multiple_return,
+      lidar_config.enable_falcon_ring, lidar_config.continue_live,
       lidar_config.pcap_file.c_str(), lidar_config.hv_table_file.c_str(),
       lidar_config.packet_rate, lidar_config.file_rewind, lidar_config.max_range,
       lidar_config.min_range, lidar_config.name_value_pairs.c_str(), lidar_config.coordinate_mode,

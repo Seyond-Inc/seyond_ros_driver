@@ -62,6 +62,7 @@ static void coordinate_transfer(SeyondPoint *point, int32_t coordinate_mode, flo
 }
 
 DriverLidar::DriverLidar(const LidarConfig& lidar_config) {
+  param_ = lidar_config;
   replay_rosbag_flag_ = lidar_config.replay_rosbag;
   packet_mode_ = lidar_config.packet_mode;
 
@@ -346,6 +347,18 @@ int32_t DriverLidar::lidar_live_process() {
     inno_log_warning("%s, set_return_mode failed", lidar_name_.c_str());
   }
 
+  if (param_.enable_falcon_ring) {
+    ret = ret = inno_lidar_set_attribute_string(lidar_handle_, "use_ring_id", "1");
+    if (ret != 0) {
+      inno_log_warning("%s, set use_ring_id failed", lidar_name_.c_str());
+    }
+    void *converter = inno_lidar_get_ring_id_converter(lidar_handle_);
+    ring_id_converter_ = reinterpret_cast<RingIdConverterInterface *>(converter);
+    if (ring_id_converter_ == nullptr) {
+      inno_log_warning("%s, get ring id converter failed.", lidar_name_.c_str());
+    }
+  }
+
   return 0;
 }
 
@@ -453,8 +466,8 @@ void DriverLidar::convert_and_parse(const InnoDataPacket *pkt) {
           pkt, reinterpret_cast<InnoDataPacket *>(&data_buffer[0]), data_buffer.size(), false,
           reinterpret_cast<InnoDataPacket *>(anglehv_table_.data()));
     } else {
-      inno_lidar_convert_to_xyz_pointcloud(pkt, reinterpret_cast<InnoDataPacket *>(&data_buffer[0]),
-                                           data_buffer.size(), false);
+      InnoDataPacketUtils::convert_to_xyz_pointcloud(*pkt, reinterpret_cast<InnoDataPacket *>(&data_buffer[0]),
+                                                     data_buffer.size(), false, ring_id_converter_, nullptr, false);
     }
     data_packet_parse(reinterpret_cast<InnoDataPacket *>(&data_buffer[0]));
   } else if (CHECK_XYZ_POINTCLOUD_DATA(pkt->type)) {
@@ -490,8 +503,14 @@ void DriverLidar::point_xyz_data_parse(bool is_use_refl, uint32_t point_num, Poi
     if constexpr (std::is_same<PointType, const InnoEnXyzPoint *>::value) {
       point.intensity =
           is_use_refl ? static_cast<float>(point_ptr->reflectance) : static_cast<float>(point_ptr->intensity);
+      point.scan_id = point_ptr->scan_id;
     } else if constexpr (std::is_same<PointType, const InnoXyzPoint *>::value) {
       point.intensity = static_cast<float>(point_ptr->refl);
+      if (param_.enable_falcon_ring) {
+        point.scan_id = point_ptr->ring_id;
+      } else {
+        point.scan_id = point_ptr->scan_id;
+      }
     }
 #ifdef ENABLE_XYZIT
     if constexpr (std::is_same<PointType, const InnoEnXyzPoint *>::value) {
@@ -500,7 +519,6 @@ void DriverLidar::point_xyz_data_parse(bool is_use_refl, uint32_t point_num, Poi
       point.elongation = point_ptr->elongation;
     }
     int32_t roi = point_ptr->in_roi == 3 ? (1 << 2) : 0;
-    point.scan_id = point_ptr->scan_id;
     point.scan_idx = point_ptr->scan_idx;
     point.flags = point_ptr->channel | roi | (point_ptr->facet << 3);
     point.is_2nd_return = point_ptr->is_2nd_return;

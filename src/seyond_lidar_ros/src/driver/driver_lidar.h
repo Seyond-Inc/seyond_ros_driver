@@ -23,6 +23,7 @@
 
 #include "point_types.h"
 #include "sdk_common/inno_lidar_packet.h"
+#include "sdk_common/ring_id_converter_interface.h"
 #include "utils/inno_lidar_log.h"
 
 
@@ -56,6 +57,7 @@ struct LidarConfig {
   int32_t udp_port;
   bool reflectance_mode;
   int32_t multiple_return;
+  bool enable_falcon_ring;
 
   bool continue_live;
 
@@ -137,6 +139,7 @@ class DriverLidar {
   void point_xyz_data_parse(bool is_use_refl, uint32_t point_num, PointType point_ptr);
 
  public:
+  LidarConfig param_;
   // for generic lidar
   bool anglehv_table_init_{false};
   std::vector<char> anglehv_table_;
@@ -189,6 +192,8 @@ class DriverLidar {
   std::string transform_matrix_;
   Eigen::Matrix4f T_2_0_;
   bool transform_degree_flag_{false};
+
+  RingIdConverterInterface *ring_id_converter_{nullptr};
 };
 
 }  // namespace seyond

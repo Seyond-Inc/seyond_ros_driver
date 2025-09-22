@@ -219,6 +219,7 @@ class ROSNode {
     node_ptr_->get_parameter_or<int32_t>("udp_port", lidar_config.udp_port, 8010);
     node_ptr_->get_parameter_or<bool>("reflectance_mode", lidar_config.reflectance_mode, true);
     node_ptr_->get_parameter_or<int32_t>("multiple_return", lidar_config.multiple_return, 1);
+    node_ptr_->get_parameter_or<bool>("enable_falcon_ring", lidar_config.enable_falcon_ring, false);
 
     node_ptr_->get_parameter_or<bool>("continue_live", lidar_config.continue_live, false);
 

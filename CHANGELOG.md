@@ -34,3 +34,9 @@
 - Fixed replay_rosbag parameter error.
 - Fixed the packet loss rate display error.
 - Fixed launch file comment error.
+
+
+## [v1.0.x] (unreleased)
+
+### Added
+- Support falcon ring_id calculation.

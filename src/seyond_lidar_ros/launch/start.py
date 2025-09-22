@@ -87,6 +87,11 @@ def generate_launch_description():
                 default_value='1',
                 description='set lidar point cloud multiple return mode, 1/2/3'
             ),
+            DeclareLaunchArgument(
+                'enable_falcon_ring',
+                default_value='False',
+                description='enable falcon ring_id calculation, default false'
+            ),
 
             DeclareLaunchArgument(
                 'continue_live',
@@ -194,6 +199,7 @@ def generate_launch_description():
                     {'udp_port': LaunchConfiguration('udp_port')},
                     {'reflectance_mode': LaunchConfiguration('reflectance_mode')},
                     {'multiple_return': LaunchConfiguration('multiple_return')},
+                    {'enable_falcon_ring': LaunchConfiguration('enable_falcon_ring')},
                     {'continue_live': LaunchConfiguration('continue_live')},
                     {'pcap_file': LaunchConfiguration('pcap_file')},
                     {'hv_table_file': LaunchConfiguration('hv_table_file')},

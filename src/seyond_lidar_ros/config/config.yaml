@@ -18,6 +18,7 @@ lidars:
       udp_port: 8010                                  #Udp port
       reflectance_mode: true                          #Reflectance mode
       multiple_return: 1                              #Multiple return
+      enable_falcon_ring: false                       #Enable falcon ring_id calculation
 
       continue_live: false                            #Continue live
 

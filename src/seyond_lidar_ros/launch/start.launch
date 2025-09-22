@@ -31,6 +31,8 @@
   <arg name="reflectance_mode" default="true" />
   <!-- 1:singe strongest return 2:2 strongest return -->
   <arg name="multiple_return" default="1" />
+  <!-- enable falcon ring_id calculation, default false -->
+  <arg name="enable_falcon_ring" default="false" />
 
   <!-- continue live -->
   <arg name="continue_live" default="false" />
@@ -80,6 +82,7 @@
     <param name="udp_port" value="$(arg udp_port)"/>
     <param name="reflectance_mode" value="$(arg reflectance_mode)"/>
     <param name="multiple_return" value="$(arg multiple_return)"/>
+    <param name="enable_falcon_ring" value="$(arg enable_falcon_ring)"/>
 
     <param name="continue_live" value="$(arg continue_live)"/>
 

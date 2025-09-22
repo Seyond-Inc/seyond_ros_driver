@@ -205,6 +205,7 @@ class ROSNode {
     private_nh_->param("udp_port", lidar_config.udp_port, 8010);
     private_nh_->param("reflectance_mode", lidar_config.reflectance_mode, true);
     private_nh_->param("multiple_return", lidar_config.multiple_return, 1);
+    private_nh_->param("enable_falcon_ring", lidar_config.enable_falcon_ring, false);
 
     private_nh_->param("continue_live", lidar_config.continue_live, false);
 
