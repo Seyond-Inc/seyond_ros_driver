@@ -150,23 +150,6 @@ class DriverLidar {
   std::function<void(pcl::PointCloud<SeyondPoint>&, double)> frame_publish_cb_;
   static std::function<void(int32_t, const char*, const char*)> ros_log_cb_s_;
 
-  std::string lidar_name_;
-  std::string lidar_ip_;
-  std::string pcap_file_;
-  std::string hv_table_file_;
-  bool packet_mode_;
-  int32_t lidar_port_;
-  bool reflectance_mode_;
-  int32_t multiple_return_;
-  // replay file
-  bool replay_rosbag_flag_;
-  int32_t packet_rate_;
-  int32_t file_rewind_;
-  int32_t udp_port_;
-  double max_range_;
-  double min_range_;
-  std::string name_value_pairs_;
-
   // status
   bool is_running_{false};
   std::thread check_datacallback_thread_;
@@ -174,22 +157,12 @@ class DriverLidar {
   std::mutex running_mutex_;
   std::atomic_bool is_receive_data_{false};
   int32_t lidar_handle_{-1};
-  bool continue_live_{false};
   bool fatal_error_{false};
   int64_t current_frame_id_{-1};
   std::vector<uint8_t> data_buffer;
-  int32_t coordinate_mode_;
   double current_ts_start_;
 
   // transform
-  bool transform_enable_;
-  double x_;
-  double y_;
-  double z_;
-  double pitch_;
-  double yaw_;
-  double roll_;
-  std::string transform_matrix_;
   Eigen::Matrix4f T_2_0_;
   bool transform_degree_flag_{false};
 
