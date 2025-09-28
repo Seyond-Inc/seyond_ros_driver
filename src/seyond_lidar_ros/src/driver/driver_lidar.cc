@@ -474,20 +474,20 @@ void DriverLidar::point_xyz_data_parse(bool is_use_refl, uint32_t point_num, Poi
     if constexpr (std::is_same<PointType, const InnoEnXyzPoint *>::value) {
       point.intensity =
           is_use_refl ? static_cast<float>(point_ptr->reflectance) : static_cast<float>(point_ptr->intensity);
-      point.scan_id = point_ptr->scan_id;
     } else if constexpr (std::is_same<PointType, const InnoXyzPoint *>::value) {
       point.intensity = static_cast<float>(point_ptr->refl);
+    }
+#ifdef ENABLE_XYZIT
+    if constexpr (std::is_same<PointType, const InnoEnXyzPoint *>::value) {
+      point.elongation = 0;
+      point.scan_id = point_ptr->scan_id;
+    } else if constexpr (std::is_same<PointType, const InnoXyzPoint *>::value) {
+      point.elongation = point_ptr->elongation;
       if (param_.enable_falcon_ring) {
         point.scan_id = point_ptr->ring_id;
       } else {
         point.scan_id = point_ptr->scan_id;
       }
-    }
-#ifdef ENABLE_XYZIT
-    if constexpr (std::is_same<PointType, const InnoEnXyzPoint *>::value) {
-      point.elongation = 0;
-    } else if constexpr (std::is_same<PointType, const InnoXyzPoint *>::value) {
-      point.elongation = point_ptr->elongation;
     }
     int32_t roi = point_ptr->in_roi == 3 ? (1 << 2) : 0;
     point.scan_idx = point_ptr->scan_idx;
