@@ -76,6 +76,7 @@ please refer to [config.yaml](/src/seyond_lidar_ros/config/config.yaml), support
 | udp_port | 8010 | udp port |
 | reflectance_mode | true | 0:intensiy mode 1:reflectance mode |
 | multiple_return | 1   | lidar detection echo mode |
+| enable_falcon_ring | false | enable falcon ring_id calculation |
 | continue_live | false | fatal error encountered, restart driver |
 | pcap_file | ""  | path of path playback pcapfile |
 | hv_table_file | ""  | path of hv table file, only for generic lidar |
