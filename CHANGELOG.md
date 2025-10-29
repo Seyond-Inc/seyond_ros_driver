@@ -36,7 +36,11 @@
 - Fixed launch file comment error.
 
 
-## [v1.0.x] (unreleased)
+## [v1.0.3x] (unreleased)
 
 ### Added
 - Support falcon ring_id calculation.
+
+### Changed
+- Updated the submodule seyond_sdk to v3.103.4.
+- Synced the LICENSE file with seyond_sdk.

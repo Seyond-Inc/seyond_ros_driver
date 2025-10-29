@@ -1,10 +1,10 @@
 <?xml version="1.0"?>
 <package format="3">
   <name>seyond</name>
-  <version>1.0.1</version>
+  <version>1.0.2</version>
   <description>The seyond driver package</description>
-  <maintainer email="yuechao.gu@cn.seyond.com">Yuechao Gu</maintainer>
-  <license>Apache 2.0</license>
+  <maintainer email="yuechao.gu@cn.seyond.com">seyond</maintainer>
+  <license>BSD</license>
 
   <buildtool_depend condition="$ROS_VERSION == 1">catkin</buildtool_depend>
   <buildtool_depend condition="$ROS_VERSION == 2">ament_cmake</buildtool_depend>
