@@ -41,7 +41,6 @@ if($ENV{ROS_VERSION} MATCHES "2")
   find_package(sensor_msgs REQUIRED)
   find_package(PCL REQUIRED)
   find_package(message_filters REQUIRED)
-  find_package(pcl_msgs REQUIRED)
   find_package(pcl_conversions REQUIRED)
   find_package(builtin_interfaces REQUIRED)
   find_package(rosidl_default_generators REQUIRED)
@@ -91,7 +90,6 @@ if($ENV{ROS_VERSION} MATCHES "2")
     std_msgs
     sensor_msgs
     message_filters
-    pcl_msgs
     pcl_conversions
   )
 

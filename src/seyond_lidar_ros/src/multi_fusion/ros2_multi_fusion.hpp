@@ -10,6 +10,7 @@
 #include <message_filters/subscriber.h>
 #include <message_filters/sync_policies/approximate_time.h>
 #include <message_filters/time_synchronizer.h>
+#include <pcl_conversions/pcl_conversions.h>
 
 #include <memory>
 #include <vector>

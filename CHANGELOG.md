@@ -44,3 +44,6 @@
 ### Changed
 - Updated the submodule seyond_sdk to v3.103.4.
 - Synced the LICENSE file with seyond_sdk.
+
+### Fixed
+- Updated the package dependencies.

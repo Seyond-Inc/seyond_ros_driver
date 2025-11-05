@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <package format="3">
   <name>seyond</name>
-  <version>1.0.2</version>
+  <version>1.0.3</version>
   <description>The seyond driver package</description>
   <maintainer email="yuechao.gu@cn.seyond.com">seyond</maintainer>
   <license>BSD</license>
@@ -20,8 +20,7 @@
   <depend>std_msgs</depend>
   <depend>message_filters</depend>
   <depend>pcl_conversions</depend>
-  <depend>pcl_ros</depend>
-  <depend>pcl_msgs</depend>
+
   <depend>yaml-cpp</depend>
   
   <member_of_group>rosidl_interface_packages</member_of_group>
