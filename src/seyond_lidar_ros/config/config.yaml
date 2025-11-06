@@ -19,6 +19,7 @@ lidars:
       reflectance_mode: true                          #Reflectance mode
       multiple_return: 1                              #Multiple return
       enable_falcon_ring: false                       #Enable falcon ring_id calculation
+      enable_imu_msg: false                           #Enable imu message
 
       continue_live: false                            #Continue live
 

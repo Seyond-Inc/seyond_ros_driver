@@ -40,6 +40,7 @@
 
 ### Added
 - Support falcon ring_id calculation.
+- Support IMU message publishing.
 
 ### Changed
 - Updated the submodule seyond_sdk to v3.103.4.
