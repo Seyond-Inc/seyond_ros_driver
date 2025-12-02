@@ -147,12 +147,11 @@ class ROSAdapter {
     inno_frame_pub_->publish(std::move(ros_msg));
   }
 
-  void publishImu(const std::vector<float> imu_data, double timestamp) {
+  void publishImu(const std::vector<float> imu_data, uint64_t imu_ts_ns) {
     sensor_msgs::msg::Imu imu_msg;
     imu_msg.header.frame_id = lidar_config_.frame_id;
-    int64_t ts_ns = timestamp * 1000;
-    imu_msg.header.stamp.sec = ts_ns / 1000000000;
-    imu_msg.header.stamp.nanosec = ts_ns % 1000000000;
+    imu_msg.header.stamp.sec = imu_ts_ns / 1000000000;
+    imu_msg.header.stamp.nanosec = imu_ts_ns % 1000000000;
 
     imu_msg.linear_acceleration.x = imu_data[0];
     imu_msg.linear_acceleration.y = imu_data[1];

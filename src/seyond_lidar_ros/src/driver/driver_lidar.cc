@@ -580,7 +580,9 @@ int32_t DriverLidar::lidar_status_callback(const InnoStatusPacket *pkt) {
 
   if (param_.enable_imu_msg) {
     InnoStatusPacket tmp_pkt = *pkt;
-    inno_lidar_correct_imu_status(pkt, &tmp_pkt);
+    if (static_cast<InnoLidarType>(tmp_pkt.common.lidar_type) == INNO_LIDAR_TYPE_FALCON) {
+      inno_lidar_correct_imu_status(pkt, &tmp_pkt);
+    }
     std::vector<float> imu_data;
     imu_data.resize(6);
 
@@ -592,16 +594,13 @@ int32_t DriverLidar::lidar_status_callback(const InnoStatusPacket *pkt) {
     imu_data[4] = static_cast<float>(tmp_pkt.sensor_readings.gyro_unit_y) / 100000.0f;
     imu_data[5] = static_cast<float>(tmp_pkt.sensor_readings.gyro_unit_z) / 100000.0f;
 
-    // imu_data[0] = static_cast<float>(static_cast<int16_t>(tmp_pkt.sensor_readings.accel_x)) / 16384.0f;
-    // imu_data[1] = static_cast<float>(static_cast<int16_t>(tmp_pkt.sensor_readings.accel_y)) / 16384.0f;
-    // imu_data[2] = static_cast<float>(static_cast<int16_t>(tmp_pkt.sensor_readings.accel_z)) / 16384.0f;
-    // imu_data[3] = static_cast<float>(static_cast<int16_t>(tmp_pkt.sensor_readings.gyro_x)) / 131.0f;
-    // imu_data[4] = static_cast<float>(static_cast<int16_t>(tmp_pkt.sensor_readings.gyro_y)) / 131.0f;
-    // imu_data[5] = static_cast<float>(static_cast<int16_t>(tmp_pkt.sensor_readings.gyro_z)) / 131.0f;
-
     // ensure imu data in lidar coordinate before transform
     coordinate_imu(imu_data, param_.coordinate_mode);
-    imu_data_publish_cb_(imu_data, pkt->common.ts_start_us);
+    // uint64_t imu_timestamp = (tmp_pkt.sensor_readings.imu_ts_nsec == 0)
+    //                              ? static_cast<uint64_t>(pkt->common.ts_start_us * 1000)
+    //                              : tmp_pkt.sensor_readings.imu_ts_nsec;
+    uint64_t imu_timestamp = static_cast<uint64_t>(pkt->common.ts_start_us * 1000);
+    imu_data_publish_cb_(imu_data, imu_timestamp);
   }
 
   static uint64_t cnt = 0;
