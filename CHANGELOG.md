@@ -42,6 +42,8 @@
 - Support falcon ring_id calculation.
 
 ### Changed
+- Use first packet timestamp as the frame timestamp.
+- Updated Copyright info in source files.
 - Updated the submodule seyond_sdk to v3.103.4.
 - Synced the LICENSE file with seyond_sdk.
 

@@ -1,10 +1,31 @@
-/*
- *  Copyright (C) 2025 Seyond Inc.
- *
- *  License: Apache License
- *
- *  $Id$
- */
+/**********************************************************************************************************************
+Copyright (c) 2025 Seyond
+All rights reserved
+
+By downloading, copying, installing or using the software you agree to this license. If you do not agree to this
+license, do not download, install, copy or use the software.
+
+License Agreement
+For Seyond LiDAR SDK Library
+(2-clause BSD License)
+
+Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
+following conditions are met:
+
+1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following
+disclaimer.
+
+2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following
+disclaimer in the documentation and/or other materials provided with the distribution.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
+INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
+USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+**********************************************************************************************************************/
 
 #pragma once
 #include <pcl/point_cloud.h>
@@ -161,6 +182,7 @@ class DriverLidar {
   int64_t current_frame_id_{-1};
   std::vector<uint8_t> data_buffer;
   double current_ts_start_;
+  double frame_start_ts_;
 
   // transform
   Eigen::Matrix4f T_2_0_;

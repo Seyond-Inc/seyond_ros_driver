@@ -1,10 +1,31 @@
-/*
- *  Copyright (C) 2025 Seyond Inc.
- *
- *  License: Apache License
- *
- *  $Id$
- */
+/**********************************************************************************************************************
+Copyright (c) 2025 Seyond
+All rights reserved
+
+By downloading, copying, installing or using the software you agree to this license. If you do not agree to this
+license, do not download, install, copy or use the software.
+
+License Agreement
+For Seyond LiDAR SDK Library
+(2-clause BSD License)
+
+Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
+following conditions are met:
+
+1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following
+disclaimer.
+
+2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following
+disclaimer in the documentation and/or other materials provided with the distribution.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
+INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
+USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+**********************************************************************************************************************/
 
 #include "driver_lidar.h"
 
@@ -383,6 +404,7 @@ int32_t DriverLidar::lidar_data_callback(const InnoDataPacket *pkt) {
   is_receive_data_ = true;
 
   if (current_frame_id_ == -1) {
+    frame_start_ts_ = pkt->common.ts_start_us;
     current_frame_id_ = pkt->idx;
     inno_log_info("%s, get first frame id %lu", param_.lidar_name.c_str(), current_frame_id_);
     return 0;
@@ -399,19 +421,23 @@ int32_t DriverLidar::lidar_data_callback(const InnoDataPacket *pkt) {
     }
   }
 
-  bool next_idx_flag = false;
+  bool is_next_frame  = false;
   if (current_frame_id_ != pkt->idx) {
-    next_idx_flag = true;
+    is_next_frame  = true;
     current_frame_id_ = pkt->idx;
   }
 
   if (param_.packet_mode) {
     uint64_t pkt_len = sizeof(InnoDataPacket) + pkt->item_number * pkt->item_size;
-    packet_publish_cb_(reinterpret_cast<const int8_t *>(pkt), pkt_len, pkt->common.ts_start_us, next_idx_flag);
+    packet_publish_cb_(reinterpret_cast<const int8_t *>(pkt), pkt_len, frame_start_ts_, is_next_frame);
+    if (is_next_frame) {
+      frame_start_ts_ = pkt->common.ts_start_us;
+    }
   } else {
-    if (next_idx_flag) {
+    if (is_next_frame) {
       transform_pointcloud();
-      frame_publish_cb_(*pcl_pc_ptr, pkt->common.ts_start_us);
+      frame_publish_cb_(*pcl_pc_ptr, frame_start_ts_);
+      frame_start_ts_ = pkt->common.ts_start_us;
       pcl_pc_ptr->clear();
     }
     convert_and_parse(pkt);
