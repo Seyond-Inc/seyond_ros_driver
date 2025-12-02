@@ -79,6 +79,7 @@ struct LidarConfig {
   bool reflectance_mode;
   int32_t multiple_return;
   bool enable_falcon_ring;
+  bool enable_imu_msg;
 
   bool continue_live;
 
@@ -136,6 +137,9 @@ class DriverLidar {
       const std::function<void(pcl::PointCloud<SeyondPoint> &, double)> &callback) {
     frame_publish_cb_ = callback;
   }
+  void register_publish_imu_callback(const std::function<void(std::vector<float> &, uint64_t)>& callback) {
+    imu_data_publish_cb_ = callback;
+  }
   void init_transform_matrix();
   void transform_pointcloud();
   void convert_and_parse(const int8_t *pkt);
@@ -169,6 +173,7 @@ class DriverLidar {
 
   std::function<void(const int8_t*, uint64_t, double, bool)> packet_publish_cb_;
   std::function<void(pcl::PointCloud<SeyondPoint>&, double)> frame_publish_cb_;
+  std::function<void(std::vector<float>&, uint64_t)> imu_data_publish_cb_;
   static std::function<void(int32_t, const char*, const char*)> ros_log_cb_s_;
 
   // status

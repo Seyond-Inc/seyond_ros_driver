@@ -32,6 +32,7 @@ USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <pcl_conversions/pcl_conversions.h>
 #include <ros/ros.h>
 #include <sensor_msgs/PointCloud2.h>
+#include <sensor_msgs/Imu.h>
 #include <std_msgs/Float64.h>
 
 #include <limits>
@@ -72,6 +73,12 @@ class ROSAdapter {
       driver_ptr_->register_publish_packet_callback(std::bind(&ROSAdapter::publishPacket, this, std::placeholders::_1,
                                                               std::placeholders::_2, std::placeholders::_3,
                                                               std::placeholders::_4));
+    }
+
+    if (lidar_config_.enable_imu_msg) {
+      inno_imu_pub_ = nh_->advertise<sensor_msgs::Imu>("/iv_imu", 10);
+      driver_ptr_->register_publish_imu_callback(
+          std::bind(&ROSAdapter::publishImu, this, std::placeholders::_1, std::placeholders::_2));
     }
   }
 
@@ -147,6 +154,20 @@ class ROSAdapter {
     inno_frame_pub_.publish(std::move(ros_msg));
   }
 
+  void publishImu(std::vector<float> &imu_data, uint64_t imu_ts_ns) {
+    sensor_msgs::Imu ros_msg;
+    ros_msg.header.frame_id = lidar_config_.frame_id;
+    ros_msg.header.stamp.sec = imu_ts_ns / 1000000000;
+    ros_msg.header.stamp.nsec = imu_ts_ns % 1000000000;
+    ros_msg.linear_acceleration.x = imu_data[0];
+    ros_msg.linear_acceleration.y = imu_data[1];
+    ros_msg.linear_acceleration.z = imu_data[2];
+    ros_msg.angular_velocity.x = imu_data[3];
+    ros_msg.angular_velocity.y = imu_data[4];
+    ros_msg.angular_velocity.z = imu_data[5];
+    inno_imu_pub_.publish(std::move(ros_msg));
+  }
+
  private:
   seyond::LidarConfig lidar_config_;
   std::shared_ptr<ros::NodeHandle> nh_;
@@ -155,6 +176,7 @@ class ROSAdapter {
 
   ros::Publisher inno_frame_pub_;
   ros::Publisher inno_pkt_pub_;
+  ros::Publisher inno_imu_pub_;
   ros::Subscriber inno_pkt_sub_;
 
   std::unique_ptr<seyond::SeyondScan> inno_scan_msg_;
@@ -227,6 +249,7 @@ class ROSNode {
     private_nh_->param("reflectance_mode", lidar_config.reflectance_mode, true);
     private_nh_->param("multiple_return", lidar_config.multiple_return, 1);
     private_nh_->param("enable_falcon_ring", lidar_config.enable_falcon_ring, false);
+    private_nh_->param("enable_imu_msg", lidar_config.enable_imu_msg, false);
 
     private_nh_->param("continue_live", lidar_config.continue_live, false);
 

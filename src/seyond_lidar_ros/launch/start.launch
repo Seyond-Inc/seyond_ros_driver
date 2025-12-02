@@ -33,6 +33,8 @@
   <arg name="multiple_return" default="1" />
   <!-- enable falcon ring_id calculation, default false -->
   <arg name="enable_falcon_ring" default="false" />
+  <!-- enable IMU message, default false -->
+  <arg name="enable_imu_msg" default="false" />
 
   <!-- continue live -->
   <arg name="continue_live" default="false" />
@@ -83,6 +85,7 @@
     <param name="reflectance_mode" value="$(arg reflectance_mode)"/>
     <param name="multiple_return" value="$(arg multiple_return)"/>
     <param name="enable_falcon_ring" value="$(arg enable_falcon_ring)"/>
+    <param name="enable_imu_msg" value="$(arg enable_imu_msg)"/>
 
     <param name="continue_live" value="$(arg continue_live)"/>
 

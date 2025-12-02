@@ -40,6 +40,7 @@
 
 ### Added
 - Support falcon ring_id calculation.
+- Support IMU message publishing.
 
 ### Changed
 - Use first packet timestamp as the frame timestamp.

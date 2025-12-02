@@ -82,6 +82,57 @@ static void coordinate_transfer(SeyondPoint *point, int32_t coordinate_mode, flo
   }
 }
 
+static void coordinate_imu(std::vector<float>& imu_data, int32_t coordinate_mode) {
+  if (imu_data.size() < 6) {
+    return;
+  }
+  float tmp;
+  switch (coordinate_mode) {
+    case 0:
+        break;
+      case 1:
+        tmp = imu_data[0];
+        imu_data[0] = imu_data[1];
+        imu_data[1] = imu_data[2];
+        imu_data[2] = tmp;
+        tmp = imu_data[3];
+        imu_data[3] = imu_data[4];
+        imu_data[4] = imu_data[5];
+        imu_data[5] = tmp;
+        break;
+      case 2:
+        tmp = imu_data[0];
+        imu_data[0] = imu_data[1];
+        imu_data[1] = tmp;
+        tmp = imu_data[3];
+        imu_data[3] = imu_data[4];
+        imu_data[4] = tmp;
+        break;
+      case 3:
+        tmp = imu_data[0];
+        imu_data[0] = imu_data[2];
+        imu_data[1] = -imu_data[1];
+        imu_data[2] = tmp;
+        tmp = imu_data[3];
+        imu_data[3] = imu_data[5];
+        imu_data[4] = -imu_data[4];
+        imu_data[5] = tmp;
+        break;
+      case 4:
+        tmp = imu_data[0];
+        imu_data[0] = imu_data[2];
+        imu_data[2] = imu_data[1];
+        imu_data[1] = tmp;
+        tmp = imu_data[3];
+        imu_data[3] = imu_data[5];
+        imu_data[5] = imu_data[4];
+        imu_data[4] = tmp;
+        break;
+      default:
+        break;
+  }
+}
+
 DriverLidar::DriverLidar(const LidarConfig& lidar_config) {
   param_ = lidar_config;
   init_transform_matrix();
@@ -551,6 +602,31 @@ int32_t DriverLidar::lidar_status_callback(const InnoStatusPacket *pkt) {
   if (!inno_lidar_check_status_packet(pkt, 0)) {
     inno_log_error("%s, corrupted pkt->idx = %" PRI_SIZEU, param_.lidar_name.c_str(), pkt->idx);
     return -1;
+  }
+
+  if (param_.enable_imu_msg) {
+    InnoStatusPacket tmp_pkt = *pkt;
+    if (static_cast<InnoLidarType>(tmp_pkt.common.lidar_type) == INNO_LIDAR_TYPE_FALCON) {
+      inno_lidar_correct_imu_status(pkt, &tmp_pkt);
+    }
+    std::vector<float> imu_data;
+    imu_data.resize(6);
+
+    // only for unit imu data
+    imu_data[0] = static_cast<float>(tmp_pkt.sensor_readings.accel_unit_x) / 100000.0f;
+    imu_data[1] = static_cast<float>(tmp_pkt.sensor_readings.accel_unit_y) / 100000.0f;
+    imu_data[2] = static_cast<float>(tmp_pkt.sensor_readings.accel_unit_z) / 100000.0f;
+    imu_data[3] = static_cast<float>(tmp_pkt.sensor_readings.gyro_unit_x) / 100000.0f;
+    imu_data[4] = static_cast<float>(tmp_pkt.sensor_readings.gyro_unit_y) / 100000.0f;
+    imu_data[5] = static_cast<float>(tmp_pkt.sensor_readings.gyro_unit_z) / 100000.0f;
+
+    // ensure imu data in lidar coordinate before transform
+    coordinate_imu(imu_data, param_.coordinate_mode);
+    // uint64_t imu_timestamp = (tmp_pkt.sensor_readings.imu_ts_nsec == 0)
+    //                              ? static_cast<uint64_t>(pkt->common.ts_start_us * 1000)
+    //                              : tmp_pkt.sensor_readings.imu_ts_nsec;
+    uint64_t imu_timestamp = static_cast<uint64_t>(pkt->common.ts_start_us * 1000);
+    imu_data_publish_cb_(imu_data, imu_timestamp);
   }
 
   static uint64_t cnt = 0;
