@@ -587,12 +587,17 @@ int32_t DriverLidar::lidar_status_callback(const InnoStatusPacket *pkt) {
     imu_data.resize(6);
 
     // only for unit imu data
-    imu_data[0] = static_cast<float>(tmp_pkt.sensor_readings.accel_unit_x) / 100000.0f;
-    imu_data[1] = static_cast<float>(tmp_pkt.sensor_readings.accel_unit_y) / 100000.0f;
-    imu_data[2] = static_cast<float>(tmp_pkt.sensor_readings.accel_unit_z) / 100000.0f;
-    imu_data[3] = static_cast<float>(tmp_pkt.sensor_readings.gyro_unit_x) / 100000.0f;
-    imu_data[4] = static_cast<float>(tmp_pkt.sensor_readings.gyro_unit_y) / 100000.0f;
-    imu_data[5] = static_cast<float>(tmp_pkt.sensor_readings.gyro_unit_z) / 100000.0f;
+    // unit g, convert to m/s^2
+    const float G = 9.80665f;
+    imu_data[0] = static_cast<float>(tmp_pkt.sensor_readings.accel_unit_x) / 100000.0f * G;
+    imu_data[1] = static_cast<float>(tmp_pkt.sensor_readings.accel_unit_y) / 100000.0f * G;
+    imu_data[2] = static_cast<float>(tmp_pkt.sensor_readings.accel_unit_z) / 100000.0f * G;
+
+    // unit: deg/s, convert to rad/s
+    const float DEG2RAD = M_PI / 180.0f;
+    imu_data[3] = static_cast<float>(tmp_pkt.sensor_readings.gyro_unit_x) / 100000.0f * DEG2RAD;
+    imu_data[4] = static_cast<float>(tmp_pkt.sensor_readings.gyro_unit_y) / 100000.0f * DEG2RAD;
+    imu_data[5] = static_cast<float>(tmp_pkt.sensor_readings.gyro_unit_z) / 100000.0f * DEG2RAD;
 
     // ensure imu data in lidar coordinate before transform
     coordinate_imu(imu_data, param_.coordinate_mode);
