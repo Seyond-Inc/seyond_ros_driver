@@ -601,10 +601,9 @@ int32_t DriverLidar::lidar_status_callback(const InnoStatusPacket *pkt) {
 
     // ensure imu data in lidar coordinate before transform
     coordinate_imu(imu_data, param_.coordinate_mode);
-    // uint64_t imu_timestamp = (tmp_pkt.sensor_readings.imu_ts_nsec == 0)
-    //                              ? static_cast<uint64_t>(pkt->common.ts_start_us * 1000)
-    //                              : tmp_pkt.sensor_readings.imu_ts_nsec;
-    uint64_t imu_timestamp = static_cast<uint64_t>(pkt->common.ts_start_us * 1000);
+    uint64_t imu_timestamp = (tmp_pkt.sensor_readings.imu_ts_nsec == 0)
+                                 ? static_cast<uint64_t>(pkt->common.ts_start_us * 1000)
+                                 : tmp_pkt.sensor_readings.imu_ts_nsec;
     imu_data_publish_cb_(imu_data, imu_timestamp);
   }
 

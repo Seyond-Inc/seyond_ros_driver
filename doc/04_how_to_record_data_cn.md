@@ -40,5 +40,5 @@ roslaunch seyond start.launch replay_rosbag:=true
 // 回放 packet包
 ros2 bag play <packet_rosbag> -l
 // 使用驱动解析
-ros2 launch seyond start.launch replay_rosbag:=true
+ros2 launch seyond start.py replay_rosbag:=true
 ```
