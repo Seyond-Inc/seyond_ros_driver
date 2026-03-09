@@ -36,7 +36,7 @@
 - Fixed launch file comment error.
 
 
-## [v1.0.3x] (unreleased)
+## [v1.0.3] (2026-03-09)
 
 ### Added
 - Support falcon ring_id calculation.
@@ -48,3 +48,4 @@
 
 ### Fixed
 - Updated the package dependencies.
+- Fixed documentation errors.
