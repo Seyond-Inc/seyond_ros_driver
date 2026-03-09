@@ -75,6 +75,7 @@ sudo apt-get install -y  libyaml-cpp-dev
 | reflectance_mode | true | 反射模式 false:强度模式 true:反射率模式 |
 | multiple_return | 1   | 回波模式 1:单回波 2:双回波 |
 | enable_falcon_ring | false | 启用falcon ring_id |
+| enable_imu_msg     | false | 启用IMU消息发布 |
 | continue_live | false | 启用后，无法连接将自动重启驱动 |
 | pcap_file | ""  | pcap文件路径，用于回放pcap文件 |
 | hv_table_file | ""  | hv_table文件路径，用于解析generic雷达的pcap包 |

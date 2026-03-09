@@ -33,6 +33,7 @@ USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/point_cloud2.hpp>
+#include <sensor_msgs/msg/imu.hpp>
 #include <std_msgs/msg/float64.hpp>
 #include <yaml-cpp/yaml.h>
 
@@ -82,6 +83,12 @@ class ROSAdapter {
       driver_ptr_->register_publish_packet_callback(std::bind(&ROSAdapter::publishPacket, this, std::placeholders::_1,
                                                               std::placeholders::_2, std::placeholders::_3,
                                                               std::placeholders::_4));
+    }
+
+    if (lidar_config_.enable_imu_msg) {
+      inno_imu_pub_ = node_ptr_->create_publisher<sensor_msgs::msg::Imu>("/iv_imu", qos);
+      driver_ptr_->register_publish_imu_callback(
+          std::bind(&ROSAdapter::publishImu, this, std::placeholders::_1, std::placeholders::_2));
     }
   }
 
@@ -161,6 +168,22 @@ class ROSAdapter {
     inno_frame_pub_->publish(std::move(ros_msg));
   }
 
+  void publishImu(const std::vector<float> imu_data, uint64_t imu_ts_ns) {
+    sensor_msgs::msg::Imu imu_msg;
+    imu_msg.header.frame_id = lidar_config_.frame_id;
+    imu_msg.header.stamp.sec = imu_ts_ns / 1000000000;
+    imu_msg.header.stamp.nanosec = imu_ts_ns % 1000000000;
+
+    imu_msg.linear_acceleration.x = imu_data[0];
+    imu_msg.linear_acceleration.y = imu_data[1];
+    imu_msg.linear_acceleration.z = imu_data[2];
+    imu_msg.angular_velocity.x = imu_data[3];
+    imu_msg.angular_velocity.y = imu_data[4];
+    imu_msg.angular_velocity.z = imu_data[5];
+
+    inno_imu_pub_->publish(std::move(imu_msg));
+  }
+
  private:
   seyond::LidarConfig lidar_config_;
   std::shared_ptr<rclcpp::Node> node_ptr_;
@@ -168,6 +191,7 @@ class ROSAdapter {
 
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr inno_frame_pub_{nullptr};
   rclcpp::Publisher<seyond::msg::SeyondScan>::SharedPtr inno_pkt_pub_{nullptr};
+  rclcpp::Publisher<sensor_msgs::msg::Imu>::SharedPtr inno_imu_pub_{nullptr};
   rclcpp::Subscription<seyond::msg::SeyondScan>::SharedPtr inno_pkt_sub_{nullptr};
 
   std::unique_ptr<seyond::msg::SeyondScan> inno_scan_msg_;
@@ -241,6 +265,7 @@ class ROSNode {
     node_ptr_->get_parameter_or<bool>("reflectance_mode", lidar_config.reflectance_mode, true);
     node_ptr_->get_parameter_or<int32_t>("multiple_return", lidar_config.multiple_return, 1);
     node_ptr_->get_parameter_or<bool>("enable_falcon_ring", lidar_config.enable_falcon_ring, false);
+    node_ptr_->get_parameter_or<bool>("enable_imu_msg", lidar_config.enable_imu_msg, false);
 
     node_ptr_->get_parameter_or<bool>("continue_live", lidar_config.continue_live, false);
 

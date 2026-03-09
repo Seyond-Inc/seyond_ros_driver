@@ -92,6 +92,11 @@ def generate_launch_description():
                 default_value='False',
                 description='enable falcon ring_id calculation, default false'
             ),
+            DeclareLaunchArgument(
+                'enable_imu_msg',
+                default_value='false',
+                description='enable IMU message, default false'
+            ),
 
             DeclareLaunchArgument(
                 'continue_live',
@@ -200,6 +205,7 @@ def generate_launch_description():
                     {'reflectance_mode': LaunchConfiguration('reflectance_mode')},
                     {'multiple_return': LaunchConfiguration('multiple_return')},
                     {'enable_falcon_ring': LaunchConfiguration('enable_falcon_ring')},
+                    {'enable_imu_msg': LaunchConfiguration('enable_imu_msg')},
                     {'continue_live': LaunchConfiguration('continue_live')},
                     {'pcap_file': LaunchConfiguration('pcap_file')},
                     {'hv_table_file': LaunchConfiguration('hv_table_file')},

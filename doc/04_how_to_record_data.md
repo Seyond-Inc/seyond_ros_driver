@@ -40,5 +40,5 @@ roslaunch seyond start.launch replay_rosbag:=true
 // replay packet bag
 ros2 bag play <packet_rosbag> -l
 // enable the driver to parse packet
-ros2 launch seyond start.launch replay_rosbag:=true
+ros2 launch seyond start.py replay_rosbag:=true
 ```
