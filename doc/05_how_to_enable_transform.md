@@ -11,7 +11,7 @@
 - Example: '1.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,1.0'
 - Note: it has a higher priority than x/y/z/pitch/yaw/roll. If not used, should be left empty
 
-**coordinate_mode**: Coordinate system mode, default is 3, WGS84
+**coordinate_mode**: Coordinate system mode, default is 3, right-hand coordinate system, x/y/z represent forward/left/up respectively.
 
 - 0: x-up, y-right, z-forward
 - 1: x-right, y-forward, z-up

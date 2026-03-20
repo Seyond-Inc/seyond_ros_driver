@@ -27,7 +27,9 @@
   
 - Robin-W
   
-- Robin-E1X
+- Robin-ELITE(Robin-E1X)
+
+- Hummingbird-D1
   
 
 # 环境依赖
@@ -139,7 +141,7 @@ ros2 launch seyond start.py
 
 [录制 & 回放](doc/04_how_to_record_data_cn.md)
 
-[点云变换](05_how_to_enable_transform_cn.md)
+[点云变换](doc/05_how_to_enable_transform_cn.md)
 
 [点云测试](doc/06_how_to_use_test_node_cn.md)
 

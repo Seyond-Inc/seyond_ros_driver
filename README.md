@@ -29,6 +29,8 @@ This project is built on the inno-lidar-sdk and serves as a demonstration for cu
 - Robin-W
   
 - Robin-ELITE(Robin-E1X)
+
+- Hummingbird-D1
   
 
 # Environment and Dependencies
@@ -141,7 +143,7 @@ ros2 launch seyond start.py
 
 [Record & Replay](doc/04_how_to_record_data.md)
 
-[Transform pointcloud](05_how_to_enable_transform.md)
+[Transform pointcloud](doc/05_how_to_enable_transform.md)
 
 [Frame Test](doc/06_how_to_use_test_node.md)
 
