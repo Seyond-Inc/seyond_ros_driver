@@ -51,3 +51,10 @@
 ### Fixed
 - Updated the package dependencies.
 - Fixed documentation errors.
+
+
+## [v1.0.4pre] (2026-06-19)
+
+### Fixed
+- Fixed ros2_driver_adapter.hpp frame_count_ and packets_width_ not initialized error.
+- Fixed deb packaging products for Humble and later versions.

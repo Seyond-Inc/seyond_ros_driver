@@ -196,9 +196,9 @@ class ROSAdapter {
 
   std::unique_ptr<seyond::msg::SeyondScan> inno_scan_msg_;
 
-  uint32_t frame_count_;
+  uint32_t frame_count_{0};
   uint32_t table_send_hz_{20};
-  uint32_t packets_width_;
+  uint32_t packets_width_{0};
 };
 
 class ROSNode {

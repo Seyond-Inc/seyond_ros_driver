@@ -80,7 +80,6 @@ if($ENV{ROS_VERSION} MATCHES "2")
     innolidarsdkclient.a
     innolidarsdkcommon.a
     innolidarutils.a
-    ${PCL_LIBRARIES}
     ${YAML_CPP_LIBRARIES}
   )
 

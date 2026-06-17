@@ -52,6 +52,12 @@ if [ "$ROS_VERSION" == "1" ]; then
 elif [ "$ROS_VERSION" == "2" ]; then
   cp -rp ${PROJECT_DIR}/install/seyond/share deb_root/$DEB_ROS_ROOT/
   cp -rp ${PROJECT_DIR}/install/seyond/lib deb_root/$DEB_ROS_ROOT/
+  if [ -d "${PROJECT_DIR}/install/seyond/include" ]; then
+    cp -rp ${PROJECT_DIR}/install/seyond/include deb_root/$DEB_ROS_ROOT/
+  fi
+  if [ -d "${PROJECT_DIR}/install/seyond/local" ]; then
+    cp -rp ${PROJECT_DIR}/install/seyond/local deb_root/$DEB_ROS_ROOT/
+  fi
 else
   echo "the ros version has not support yet!"
   exit -1
