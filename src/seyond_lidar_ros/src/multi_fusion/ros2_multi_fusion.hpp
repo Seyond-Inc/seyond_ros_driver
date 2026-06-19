@@ -94,17 +94,30 @@ MultiFusion::MultiFusion(std::shared_ptr<rclcpp::Node> node_ptr, std::vector<sey
 
   rclcpp::QoS qos(rclcpp::KeepLast(10));
   qos.reliable();
-  fusion_frame_pub_ = node_ptr_->create_publisher<sensor_msgs::msg::PointCloud2>(common_config.fusion_topic, qos);
+
+  // Expose the fusion publisher and the lidar input subscriptions QoS via REP-2003
+  // "qos_overrides" parameters. The hardcoded defaults are kept unless overridden.
+  const rclcpp::QosOverridingOptions qos_overrides(
+      {rclcpp::QosPolicyKind::Reliability, rclcpp::QosPolicyKind::Depth, rclcpp::QosPolicyKind::Deadline,
+       rclcpp::QosPolicyKind::Lifespan, rclcpp::QosPolicyKind::Liveliness,
+       rclcpp::QosPolicyKind::LivelinessLeaseDuration});
+
+  rclcpp::PublisherOptions pub_options;
+  pub_options.qos_overriding_options = qos_overrides;
+  fusion_frame_pub_ =
+      node_ptr_->create_publisher<sensor_msgs::msg::PointCloud2>(common_config.fusion_topic, qos, pub_options);
 
   if (lidar_num_ < 2 || lidar_num_ > 5) {
     RCLCPP_ERROR(node_ptr_->get_logger(), "Invalid lidar_num: %u", lidar_num_);
     return;
   }
 
+  rclcpp::SubscriptionOptions sub_options;
+  sub_options.qos_overriding_options = qos_overrides;
   lidar_subs_.resize(lidar_num_);
   for (uint32_t i = 0; i < lidar_num_; ++i) {
     lidar_subs_[i] = std::make_shared<message_filters::Subscriber<sensor_msgs::msg::PointCloud2>>(
-        node_ptr_, lidar_configs[i].frame_topic);
+        node_ptr_, lidar_configs[i].frame_topic, rmw_qos_profile_default, sub_options);
   }
 
   switch (lidar_num_) {

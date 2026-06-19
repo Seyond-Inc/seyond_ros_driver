@@ -72,7 +72,16 @@ class ROSAdapter {
   void init() {
     rclcpp::QoS qos(rclcpp::KeepLast(10));
     qos.reliable();
-    inno_frame_pub_ = node_ptr_->create_publisher<sensor_msgs::msg::PointCloud2>(lidar_config_.frame_topic, qos);
+
+    // Expose the frame publisher QoS via REP-2003 "qos_overrides" parameters.
+    // The hardcoded defaults above are kept unless an override is provided.
+    rclcpp::PublisherOptions frame_pub_options;
+    frame_pub_options.qos_overriding_options = rclcpp::QosOverridingOptions(
+        {rclcpp::QosPolicyKind::Reliability, rclcpp::QosPolicyKind::Depth, rclcpp::QosPolicyKind::Deadline,
+         rclcpp::QosPolicyKind::Lifespan, rclcpp::QosPolicyKind::Liveliness,
+         rclcpp::QosPolicyKind::LivelinessLeaseDuration});
+    inno_frame_pub_ = node_ptr_->create_publisher<sensor_msgs::msg::PointCloud2>(lidar_config_.frame_topic, qos,
+                                                                                 frame_pub_options);
     driver_ptr_->register_publish_frame_callback(
         std::bind(&ROSAdapter::publishFrame, this, std::placeholders::_1, std::placeholders::_2));
 
