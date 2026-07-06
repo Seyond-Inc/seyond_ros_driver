@@ -55,6 +55,22 @@
 
 ## [v1.0.4pre] (2026-06-19)
 
+### Added
+- Support inno_pc file replay.
+- Added async publish thread to decouple pointcloud publishing from data callback.
+- Added fusion_time_window and fusion_buffer_size config for multi-lidar fusion.
+- Added coordinate transform support for IMU data.
+
+### Changed
+- Rewrote multi-lidar fusion with custom time-window sync, removed message_filters dependency.
+- Removed name_value_pairs parameter.
+- Changed min_range default from 0.4 to 0.1.
+- Added default values for LidarConfig and CommonConfig structs.
+- Removed fatal error auto-reconnect logic.
+
 ### Fixed
 - Fixed ros2_driver_adapter.hpp frame_count_ and packets_width_ not initialized error.
 - Fixed deb packaging products for Humble and later versions.
+- Fixed ret double assignment in lidar_live_process.
+- Fixed YAML loader not returning error on exceptions.
+- Added pcap file path and lidar_ip length validation.

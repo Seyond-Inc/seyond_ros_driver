@@ -1,5 +1,5 @@
 /**********************************************************************************************************************
-Copyright (c) 2025 Seyond
+Copyright (c) 2024 Seyond
 All rights reserved
 
 By downloading, copying, installing or using the software you agree to this license. If you do not agree to this
@@ -29,183 +29,215 @@ USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #pragma once
 
-#include <message_filters/subscriber.h>
-#include <message_filters/sync_policies/approximate_time.h>
-#include <message_filters/synchronizer.h>
 #include <pcl_conversions/pcl_conversions.h>
+#include <ros/ros.h>
+#include <sensor_msgs/PointCloud2.h>
 
-
-#include <vector>
+#include <atomic>
+#include <chrono>
+#include <condition_variable>
+#include <deque>
 #include <memory>
+#include <mutex>
+#include <string>
+#include <thread>
+#include <vector>
 
-#include "src/driver/point_types.h"
 #include "src/driver/driver_lidar.h"
+#include "src/driver/point_types.h"
 
 namespace seyond {
 
-using SyncPolicy2 = message_filters::sync_policies::ApproximateTime<sensor_msgs::PointCloud2, sensor_msgs::PointCloud2>;
-using SyncPolicy3 = message_filters::sync_policies::ApproximateTime<sensor_msgs::PointCloud2, sensor_msgs::PointCloud2,
-                                                                    sensor_msgs::PointCloud2>;
-using SyncPolicy4 = message_filters::sync_policies::ApproximateTime<sensor_msgs::PointCloud2, sensor_msgs::PointCloud2,
-                                                                    sensor_msgs::PointCloud2, sensor_msgs::PointCloud2>;
-using SyncPolicy5 = message_filters::sync_policies::ApproximateTime<sensor_msgs::PointCloud2, sensor_msgs::PointCloud2,
-                                                                    sensor_msgs::PointCloud2, sensor_msgs::PointCloud2,
-                                                                    sensor_msgs::PointCloud2>;
-
 class MultiFusion {
- private:
-  std::shared_ptr<ros::NodeHandle> nh_;
-  ros::Publisher fusion_frame_pub_;
-  int32_t lidar_num_;
-  std::vector<std::shared_ptr<message_filters::Subscriber<sensor_msgs::PointCloud2>>> lidar_subs_;
-  std::shared_ptr<message_filters::Synchronizer<SyncPolicy2>> sync_2_;
-  std::shared_ptr<message_filters::Synchronizer<SyncPolicy3>> sync_3_;
-  std::shared_ptr<message_filters::Synchronizer<SyncPolicy4>> sync_4_;
-  std::shared_ptr<message_filters::Synchronizer<SyncPolicy5>> sync_5_;
-
- public:
-  explicit MultiFusion(std::shared_ptr<ros::NodeHandle> nh, std::vector<seyond::LidarConfig> lidar_configs,
-                         seyond::CommonConfig common_config);
+public:
+  explicit MultiFusion(std::shared_ptr<ros::NodeHandle> nh,
+                       const std::vector<seyond::LidarConfig> &lidar_configs,
+                       const seyond::CommonConfig &common_config);
   ~MultiFusion();
 
-  void callback_2(const sensor_msgs::PointCloud2ConstPtr& cloud1_msg,
-                  const sensor_msgs::PointCloud2ConstPtr& cloud2_msg);
-  void callback_3(const sensor_msgs::PointCloud2ConstPtr& cloud1_msg,
-                  const sensor_msgs::PointCloud2ConstPtr& cloud2_msg,
-                  const sensor_msgs::PointCloud2ConstPtr& cloud3_msg);
-  void callback_4(const sensor_msgs::PointCloud2ConstPtr& cloud1_msg,
-                  const sensor_msgs::PointCloud2ConstPtr& cloud2_msg,
-                  const sensor_msgs::PointCloud2ConstPtr& cloud3_msg,
-                  const sensor_msgs::PointCloud2ConstPtr& cloud4_msg);
-  void callback_5(const sensor_msgs::PointCloud2ConstPtr& cloud1_msg,
-                  const sensor_msgs::PointCloud2ConstPtr& cloud2_msg,
-                  const sensor_msgs::PointCloud2ConstPtr& cloud3_msg,
-                  const sensor_msgs::PointCloud2ConstPtr& cloud4_msg,
-                  const sensor_msgs::PointCloud2ConstPtr& cloud5_msg);
+private:
+  struct StampedMsg {
+    sensor_msgs::PointCloud2ConstPtr msg;
+    int64_t stamp_ms;
+  };
+
+  static int64_t toMs(const ros::Time &t) {
+    return static_cast<int64_t>(t.sec) * 1000LL +
+           static_cast<int64_t>(t.nsec) / 1000000LL;
+  }
+
+  void onPrimary(const sensor_msgs::PointCloud2ConstPtr &msg);
+  void onSecondary(int32_t index, const sensor_msgs::PointCloud2ConstPtr &msg);
+  void workerLoop();
+
+  std::shared_ptr<ros::NodeHandle> nh_;
+  ros::Publisher fusion_frame_pub_;
+  ros::Subscriber primary_sub_;
+  std::vector<ros::Subscriber> secondary_subs_;
+
+  int32_t lidar_num_;
+  int32_t time_window_ms_;
+  int32_t buffer_size_;
+
+  std::deque<StampedMsg> primary_queue_;
+  std::mutex primary_mutex_;
+  std::condition_variable primary_cv_;
+
+  std::vector<std::deque<StampedMsg>> secondary_buffers_;
+  std::vector<std::mutex> secondary_mutexes_;
+
+  std::vector<std::string> topic_names_;
+
+  std::thread worker_thread_;
+  std::atomic<bool> running_;
 };
 
-MultiFusion::MultiFusion(std::shared_ptr<ros::NodeHandle> nh, std::vector<seyond::LidarConfig> lidar_configs,
-                         seyond::CommonConfig common_config) {
-  nh_ = nh;
-  lidar_num_ = lidar_configs.size();
-
-  fusion_frame_pub_ = nh_->advertise<sensor_msgs::PointCloud2>(common_config.fusion_topic, 20);
-
-  if (lidar_num_ < 2 || lidar_num_ > 5) {
-    ROS_ERROR("Invalid lidar_num: %d", lidar_num_);
+inline MultiFusion::MultiFusion(std::shared_ptr<ros::NodeHandle> nh,
+                                const std::vector<seyond::LidarConfig> &lidar_configs,
+                                const seyond::CommonConfig &common_config)
+    : nh_(nh), lidar_num_(static_cast<int32_t>(lidar_configs.size())),
+      time_window_ms_(common_config.fusion_time_window),
+      buffer_size_(common_config.fusion_buffer_size),
+      secondary_mutexes_(lidar_configs.size() > 1 ? lidar_configs.size() - 1
+                                                  : 0),
+      secondary_buffers_(lidar_configs.size() > 1 ? lidar_configs.size() - 1
+                                                  : 0),
+      running_(false) {
+  if (lidar_num_ < 2) {
+    ROS_WARN("[Fusion] Skipped: lidar_num=%d, need >= 2 to enable fusion", lidar_num_);
     return;
   }
 
-  lidar_subs_.resize(lidar_num_);
-  for (int32_t i = 0; i < lidar_num_; i++) {
-    lidar_subs_[i] = std::make_shared<message_filters::Subscriber<sensor_msgs::PointCloud2>>(
-        *nh_, lidar_configs[i].frame_topic, 20);
+  fusion_frame_pub_ = nh_->advertise<sensor_msgs::PointCloud2>(
+      common_config.fusion_topic, buffer_size_);
+
+  topic_names_.reserve(lidar_num_);
+  for (const auto &cfg : lidar_configs) {
+    topic_names_.push_back(cfg.frame_topic);
   }
 
-  switch (lidar_num_) {
-    case 2:
-      sync_2_ = std::make_shared<message_filters::Synchronizer<SyncPolicy2>>(SyncPolicy2(20), *lidar_subs_[0],
-                                                                           *lidar_subs_[1]);
-      sync_2_->registerCallback(
-          std::bind(&MultiFusion::callback_2, this, std::placeholders::_1, std::placeholders::_2));
-      break;
-    case 3:
-      sync_3_ = std::make_shared<message_filters::Synchronizer<SyncPolicy3>>(SyncPolicy3(20), *lidar_subs_[0],
-                                                                             *lidar_subs_[1], *lidar_subs_[2]);
-      sync_3_->registerCallback(std::bind(&MultiFusion::callback_3, this, std::placeholders::_1, std::placeholders::_2,
-                                         std::placeholders::_3));
-      break;
-    case 4:
-      sync_4_ = std::make_shared<message_filters::Synchronizer<SyncPolicy4>>(
-          SyncPolicy4(20), *lidar_subs_[0], *lidar_subs_[1], *lidar_subs_[2], *lidar_subs_[3]);
-      sync_4_->registerCallback(std::bind(&MultiFusion::callback_4, this, std::placeholders::_1, std::placeholders::_2,
-                                         std::placeholders::_3, std::placeholders::_4));
-      break;
-    case 5:
-      sync_5_ = std::make_shared<message_filters::Synchronizer<SyncPolicy5>>(
-          SyncPolicy5(20), *lidar_subs_[0], *lidar_subs_[1], *lidar_subs_[2], *lidar_subs_[3], *lidar_subs_[4]);
-      sync_5_->registerCallback(std::bind(&MultiFusion::callback_5, this, std::placeholders::_1, std::placeholders::_2,
-                                         std::placeholders::_3, std::placeholders::_4, std::placeholders::_5));
-      break;
+  primary_sub_ = nh_->subscribe<sensor_msgs::PointCloud2>(
+      lidar_configs[0].frame_topic, buffer_size_,
+      [this](const sensor_msgs::PointCloud2ConstPtr &msg) {
+        this->onPrimary(msg);
+      });
+
+  secondary_subs_.resize(lidar_num_ - 1);
+  for (int32_t i = 1; i < lidar_num_; i++) {
+    int32_t idx = i - 1;
+    secondary_subs_[idx] = nh_->subscribe<sensor_msgs::PointCloud2>(
+        lidar_configs[i].frame_topic, buffer_size_,
+        [this, idx](const sensor_msgs::PointCloud2ConstPtr &msg) {
+          this->onSecondary(idx, msg);
+        });
+  }
+
+  running_ = true;
+  worker_thread_ = std::thread(&MultiFusion::workerLoop, this);
+
+  ROS_INFO("[Fusion] Started: primary=%s, secondaries=%d, time_window=%dms, "
+           "buffer_size=%d",
+           topic_names_[0].c_str(), lidar_num_ - 1, time_window_ms_,
+           buffer_size_);
+}
+
+inline MultiFusion::~MultiFusion() {
+  running_ = false;
+  primary_cv_.notify_all();
+  if (worker_thread_.joinable()) {
+    worker_thread_.join();
   }
 }
 
-MultiFusion::~MultiFusion() {
+inline void
+MultiFusion::onPrimary(const sensor_msgs::PointCloud2ConstPtr &msg) {
+  {
+    std::lock_guard<std::mutex> lock(primary_mutex_);
+    primary_queue_.push_back({msg, toMs(msg->header.stamp)});
+    while (primary_queue_.size() > static_cast<size_t>(buffer_size_)) {
+      ROS_WARN("[Fusion] Primary queue overflow, dropping oldest frame");
+      primary_queue_.pop_front();
+    }
+  }
+  primary_cv_.notify_one();
 }
 
-void MultiFusion::callback_2(const sensor_msgs::PointCloud2ConstPtr& cloud1_msg,
-                             const sensor_msgs::PointCloud2ConstPtr& cloud2_msg) {
-  pcl::PointCloud<SeyondPoint> merged_cloud, cloud1, cloud2;
-  pcl::fromROSMsg(*cloud1_msg, cloud1);
-  pcl::fromROSMsg(*cloud2_msg, cloud2);
-
-  merged_cloud += cloud1;
-  merged_cloud += cloud2;
-  sensor_msgs::PointCloud2 merged_cloud_msg;
-  pcl::toROSMsg(merged_cloud, merged_cloud_msg);
-  merged_cloud_msg.header = cloud1_msg->header;
-  fusion_frame_pub_.publish(merged_cloud_msg);
+inline void
+MultiFusion::onSecondary(int32_t index,
+                         const sensor_msgs::PointCloud2ConstPtr &msg) {
+  std::lock_guard<std::mutex> lock(secondary_mutexes_[index]);
+  secondary_buffers_[index].push_back({msg, toMs(msg->header.stamp)});
+  while (secondary_buffers_[index].size() > static_cast<size_t>(buffer_size_)) {
+    secondary_buffers_[index].pop_front();
+  }
 }
 
-void MultiFusion::callback_3(const sensor_msgs::PointCloud2ConstPtr& cloud1_msg,
-                             const sensor_msgs::PointCloud2ConstPtr& cloud2_msg,
-                             const sensor_msgs::PointCloud2ConstPtr& cloud3_msg) {
-  pcl::PointCloud<SeyondPoint> merged_cloud, cloud1, cloud2, cloud3;
-  pcl::fromROSMsg(*cloud1_msg, cloud1);
-  pcl::fromROSMsg(*cloud2_msg, cloud2);
-  pcl::fromROSMsg(*cloud3_msg, cloud3);
+inline void MultiFusion::workerLoop() {
+  while (running_) {
+    StampedMsg primary;
+    {
+      std::unique_lock<std::mutex> lock(primary_mutex_);
+      primary_cv_.wait(lock,
+                       [this] { return !primary_queue_.empty() || !running_; });
+      if (!running_)
+        return;
+      primary = primary_queue_.front();
+      primary_queue_.pop_front();
+    }
 
-  merged_cloud += cloud1;
-  merged_cloud += cloud2;
-  merged_cloud += cloud3;
-  sensor_msgs::PointCloud2 merged_cloud_msg;
-  pcl::toROSMsg(merged_cloud, merged_cloud_msg);
-  merged_cloud_msg.header = cloud1_msg->header;
-  fusion_frame_pub_.publish(merged_cloud_msg);
+    std::this_thread::sleep_for(std::chrono::milliseconds(time_window_ms_));
+
+    pcl::PointCloud<SeyondPoint> merged_cloud;
+    pcl::fromROSMsg(*primary.msg, merged_cloud);
+
+    int32_t merged_count = 0;
+    std::string merged_info;
+    std::string skip_reason;
+
+    for (int32_t i = 0; i < lidar_num_ - 1; i++) {
+      std::lock_guard<std::mutex> lock(secondary_mutexes_[i]);
+      auto &buf = secondary_buffers_[i];
+
+      while (!buf.empty() &&
+             buf.front().stamp_ms < primary.stamp_ms - time_window_ms_) {
+        buf.pop_front();
+      }
+
+      if (buf.empty()) {
+        if (!skip_reason.empty())
+          skip_reason += ", ";
+        skip_reason += topic_names_[i + 1] + "(empty)";
+        continue;
+      }
+
+      if (buf.front().stamp_ms > primary.stamp_ms + time_window_ms_) {
+        if (!skip_reason.empty())
+          skip_reason += ", ";
+        skip_reason += topic_names_[i + 1] + "(late)";
+        continue;
+      }
+
+      int64_t dt_ms = buf.front().stamp_ms - primary.stamp_ms;
+      if (!merged_info.empty())
+        merged_info += ", ";
+      merged_info += topic_names_[i + 1] + "(" + std::to_string(dt_ms) + "ms)";
+
+      pcl::PointCloud<SeyondPoint> sec_cloud;
+      pcl::fromROSMsg(*buf.front().msg, sec_cloud);
+      merged_cloud += sec_cloud;
+      buf.pop_front();
+      merged_count++;
+    }
+
+    sensor_msgs::PointCloud2 merged_msg;
+    pcl::toROSMsg(merged_cloud, merged_msg);
+    merged_msg.header = primary.msg->header;
+    fusion_frame_pub_.publish(merged_msg);
+
+    ROS_INFO("[Fusion] stamp=%ldms, merged %d/%d: %s%s%s", primary.stamp_ms,
+             merged_count, lidar_num_ - 1, merged_info.c_str(),
+             skip_reason.empty() ? "" : ", skipped: ", skip_reason.c_str());
+  }
 }
 
-void MultiFusion::callback_4(const sensor_msgs::PointCloud2ConstPtr& cloud1_msg,
-                             const sensor_msgs::PointCloud2ConstPtr& cloud2_msg,
-                             const sensor_msgs::PointCloud2ConstPtr& cloud3_msg,
-                             const sensor_msgs::PointCloud2ConstPtr& cloud4_msg) {
-  pcl::PointCloud<SeyondPoint> merged_cloud, cloud1, cloud2, cloud3, cloud4;
-  pcl::fromROSMsg(*cloud1_msg, cloud1);
-  pcl::fromROSMsg(*cloud2_msg, cloud2);
-  pcl::fromROSMsg(*cloud3_msg, cloud3);
-  pcl::fromROSMsg(*cloud4_msg, cloud4);
-
-  merged_cloud += cloud1;
-  merged_cloud += cloud2;
-  merged_cloud += cloud3;
-  merged_cloud += cloud4;
-  sensor_msgs::PointCloud2 merged_cloud_msg;
-  pcl::toROSMsg(merged_cloud, merged_cloud_msg);
-  merged_cloud_msg.header = cloud1_msg->header;
-  fusion_frame_pub_.publish(merged_cloud_msg);
-}
-
-void MultiFusion::callback_5(const sensor_msgs::PointCloud2ConstPtr& cloud1_msg,
-                             const sensor_msgs::PointCloud2ConstPtr& cloud2_msg,
-                             const sensor_msgs::PointCloud2ConstPtr& cloud3_msg,
-                             const sensor_msgs::PointCloud2ConstPtr& cloud4_msg,
-                             const sensor_msgs::PointCloud2ConstPtr& cloud5_msg) {
-  pcl::PointCloud<SeyondPoint> merged_cloud, cloud1, cloud2, cloud3, cloud4, cloud5;
-  pcl::fromROSMsg(*cloud1_msg, cloud1);
-  pcl::fromROSMsg(*cloud2_msg, cloud2);
-  pcl::fromROSMsg(*cloud3_msg, cloud3);
-  pcl::fromROSMsg(*cloud4_msg, cloud4);
-  pcl::fromROSMsg(*cloud5_msg, cloud5);
-
-  merged_cloud += cloud1;
-  merged_cloud += cloud2;
-  merged_cloud += cloud3;
-  merged_cloud += cloud4;
-  merged_cloud += cloud5;
-  sensor_msgs::PointCloud2 merged_cloud_msg;
-  pcl::toROSMsg(merged_cloud, merged_cloud_msg);
-  merged_cloud_msg.header = cloud1_msg->header;
-  fusion_frame_pub_.publish(merged_cloud_msg);
-}
-
-
-}  // namespace seyond
+} // namespace seyond

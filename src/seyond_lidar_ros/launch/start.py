@@ -5,6 +5,7 @@ from launch.substitutions import LaunchConfiguration
 from launch.actions import SetEnvironmentVariable
 from ament_index_python.packages import get_package_share_directory
 
+# from ament_index_python.packages import get_package_share_directory
 import os
 
 
@@ -103,7 +104,12 @@ def generate_launch_description():
                 default_value='False',
                 description='Continue live'
             ),
-
+            
+            DeclareLaunchArgument(
+                'inno_pc_file',
+                default_value='',
+                description='Path to inno_pc file'
+            ),
             DeclareLaunchArgument(
                 'pcap_file',
                 default_value='',
@@ -131,18 +137,13 @@ def generate_launch_description():
             ),
             DeclareLaunchArgument(
                 'min_range',
-                default_value='0.4',
+                default_value='0.1',
                 description='ros point cloud min range'
-            ),
-            DeclareLaunchArgument(
-                'name_value_pairs',
-                default_value='',
-                description='name value pairs, e.g., "name1=value1,name2=value2"'
             ),
             DeclareLaunchArgument(
                 'coordinate_mode',
                 default_value='3',
-                description='specify coordinate transformation, default is 3, (x/y/z) 0:up/right/forward 3:forward/left/up'
+                description='specify coordinate transformation, default is 3, 0:up/right/forward 3:forward/left/up'
             ),
             DeclareLaunchArgument(
                 'transform_enable',
@@ -207,13 +208,13 @@ def generate_launch_description():
                     {'enable_falcon_ring': LaunchConfiguration('enable_falcon_ring')},
                     {'enable_imu_msg': LaunchConfiguration('enable_imu_msg')},
                     {'continue_live': LaunchConfiguration('continue_live')},
+                    {'inno_pc_file': LaunchConfiguration('inno_pc_file')},
                     {'pcap_file': LaunchConfiguration('pcap_file')},
                     {'hv_table_file': LaunchConfiguration('hv_table_file')},
                     {'packet_rate': LaunchConfiguration('packet_rate')},
                     {'file_rewind': LaunchConfiguration('file_rewind')},
                     {'max_range': LaunchConfiguration('max_range')},
                     {'min_range': LaunchConfiguration('min_range')},
-                    {'name_value_pairs': LaunchConfiguration('name_value_pairs')},
                     {'coordinate_mode': LaunchConfiguration('coordinate_mode')},
                     {'transform_enable': LaunchConfiguration('transform_enable')},
                     {'x': LaunchConfiguration('x')},

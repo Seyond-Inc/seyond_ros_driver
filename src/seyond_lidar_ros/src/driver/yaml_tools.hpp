@@ -1,5 +1,5 @@
 /**********************************************************************************************************************
-Copyright (c) 2025 Seyond
+Copyright (c) 2024 Seyond
 All rights reserved
 
 By downloading, copying, installing or using the software you agree to this license. If you do not agree to this
@@ -49,12 +49,16 @@ class YamlTools {
         config_ = YAML::LoadFile(yaml_file);
     } catch (const YAML::BadFile& e) {
         std::cerr << "Failed to load YAML file: " << e.what() << std::endl;
+        return -1;
     } catch (const YAML::ParserException& e) {
         std::cerr << "Failed to parse YAML file: " << e.what() << std::endl;
+        return -1;
     } catch (const std::exception& e) {
         std::cerr << "An error occurred: " << e.what() << std::endl;
+        return -1;
     } catch (...) {
         std::cerr << "An unknown error occurred." << std::endl;
+        return -1;
     }
 
     if (config_.IsNull()) {
@@ -64,6 +68,8 @@ class YamlTools {
     common_config.log_level = config_["common"]["log_level"].as<std::string>("info");
     common_config.fusion_enable = config_["common"]["fusion_enable"].as<bool>(false);
     common_config.fusion_topic = config_["common"]["fusion_topic"].as<std::string>("/iv_points_fusion");
+    common_config.fusion_time_window = config_["common"]["fusion_time_window"].as<int32_t>(50);
+    common_config.fusion_buffer_size = config_["common"]["fusion_buffer_size"].as<int32_t>(10);
 
     if (config_["lidars"]) {
       for (auto lidar_config : config_["lidars"]) {
@@ -87,14 +93,14 @@ class YamlTools {
 
         tmp_config.continue_live = lidar_config["lidar"]["continue_live"].as<bool>(false);
 
+        tmp_config.inno_pc_file = lidar_config["lidar"]["inno_pc_file"].as<std::string>("");
         tmp_config.pcap_file = lidar_config["lidar"]["pcap_file"].as<std::string>("");
         tmp_config.hv_table_file = lidar_config["lidar"]["hv_table_file"].as<std::string>("");
         tmp_config.packet_rate = lidar_config["lidar"]["packet_rate"].as<int32_t>(10000);
         tmp_config.file_rewind = lidar_config["lidar"]["file_rewind"].as<int32_t>(0);
 
         tmp_config.max_range = lidar_config["lidar"]["max_range"].as<double>(2000.0);
-        tmp_config.min_range = lidar_config["lidar"]["min_range"].as<double>(0.4);
-        tmp_config.name_value_pairs = lidar_config["lidar"]["name_value_pairs"].as<std::string>("");
+        tmp_config.min_range = lidar_config["lidar"]["min_range"].as<double>(0.1);
         tmp_config.coordinate_mode = lidar_config["lidar"]["coordinate_mode"].as<int32_t>(3);
 
         tmp_config.transform_enable = lidar_config["lidar"]["transform_enable"].as<bool>(false);
@@ -115,7 +121,7 @@ class YamlTools {
   }
 
   static void printConfig(std::vector<LidarConfig>& lidar_configs) {
-    for (auto lidar_config : lidar_configs) {
+    for (const auto& lidar_config : lidar_configs) {
       inno_log_info(
       "\n\treplay_rosbag: %d\n"
       "\tpacket_mode: %d\n"
@@ -132,13 +138,13 @@ class YamlTools {
       "\tenable_falcon_ring: %d\n"
       "\tenable_imu_msg: %d\n"
       "\tcontinue_live: %d\n"
+      "\tinno_pc_file: %s\n"
       "\tpcap_file: %s\n"
       "\thv_table_file: %s\n"
       "\tpacket_rate: %d\n"
       "\tfile_rewind: %d\n"
       "\tmax_range: %f\n"
       "\tmin_range: %f\n"
-      "\tname_value_pairs: %s\n"
       "\tcoordinate_mode: %d\n"
       "\ttransform_enable: %d\n"
       "\tx: %f\n"
@@ -154,10 +160,11 @@ class YamlTools {
       lidar_config.reflectance_mode, lidar_config.multiple_return,
       lidar_config.enable_falcon_ring, lidar_config.enable_imu_msg,
       lidar_config.continue_live,
+      lidar_config.inno_pc_file.c_str(),
       lidar_config.pcap_file.c_str(), lidar_config.hv_table_file.c_str(),
       lidar_config.packet_rate, lidar_config.file_rewind, lidar_config.max_range,
-      lidar_config.min_range, lidar_config.name_value_pairs.c_str(), lidar_config.coordinate_mode,
-      lidar_config.transform_enable, lidar_config.x, lidar_config.y, lidar_config.z, lidar_config.pitch,
+      lidar_config.min_range, lidar_config.coordinate_mode, lidar_config.transform_enable,
+      lidar_config.x, lidar_config.y, lidar_config.z, lidar_config.pitch,
       lidar_config.yaw, lidar_config.roll, lidar_config.transform_matrix.c_str());
     }
   }
