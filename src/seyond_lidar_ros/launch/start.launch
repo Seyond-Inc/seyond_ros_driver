@@ -39,6 +39,9 @@
   <!-- continue live -->
   <arg name="continue_live" default="false" />
 
+  <!-- the path of inno_pc file -->
+  <arg name="inno_pc_file" default="" />
+
   <!-- the path of (tcpdump/wireshark) pcap file -->
   <arg name="pcap_file" default="" />
   <!-- the path of hv table file -->
@@ -50,10 +53,8 @@
   <!-- to limit pointcloud max and min range in ROS. SDK also has config parameters max_distance and min_distance. 
   So basically we have 2 sets of parameters to do the same thing -->
   <arg name="max_range" default="2000.0" />
-  <arg name="min_range" default="0.4" />
-  <!-- when using public build, use this parameter to pass config parameter name value pairs -->
-  <arg name="name_value_pairs" default="" />
-  <!-- specify coordinate transformation, default is 3, (x/y/z) 0:up/right/forward 3:forward/left/up -->
+  <arg name="min_range" default="0.1" />
+  <!-- specify coordinate transformation, default is 3, 0:up/right/forward 3:forward/left/up -->
   <arg name="coordinate_mode" default="3" />
 
   <!-- transform -->
@@ -89,6 +90,7 @@
 
     <param name="continue_live" value="$(arg continue_live)"/>
 
+    <param name="inno_pc_file" value="$(arg inno_pc_file)"/>
     <param name="pcap_file" value="$(arg pcap_file)"/>
     <param name="hv_table_file" value="$(arg hv_table_file)"/>
     <param name="packet_rate" value="$(arg packet_rate)"/>
@@ -96,7 +98,6 @@
 
     <param name="max_range" value="$(arg max_range)"/>
     <param name="min_range" value="$(arg min_range)"/>
-    <param name="name_value_pairs" value="$(arg name_value_pairs)"/>
     <param name="coordinate_mode" value="$(arg coordinate_mode)"/>
 
     <param name="transform_enable" value="$(arg transform_enable)"/>

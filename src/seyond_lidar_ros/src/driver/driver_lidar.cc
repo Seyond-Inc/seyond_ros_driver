@@ -1,5 +1,5 @@
 /**********************************************************************************************************************
-Copyright (c) 2025 Seyond
+Copyright (c) 2023 Seyond
 All rights reserved
 
 By downloading, copying, installing or using the software you agree to this license. If you do not agree to this
@@ -90,51 +90,53 @@ static void coordinate_imu(std::vector<float>& imu_data, int32_t coordinate_mode
   switch (coordinate_mode) {
     case 0:
         break;
-      case 1:
-        tmp = imu_data[0];
-        imu_data[0] = imu_data[1];
-        imu_data[1] = imu_data[2];
-        imu_data[2] = tmp;
-        tmp = imu_data[3];
-        imu_data[3] = imu_data[4];
-        imu_data[4] = imu_data[5];
-        imu_data[5] = tmp;
-        break;
-      case 2:
-        tmp = imu_data[0];
-        imu_data[0] = imu_data[1];
-        imu_data[1] = tmp;
-        tmp = imu_data[3];
-        imu_data[3] = imu_data[4];
-        imu_data[4] = tmp;
-        break;
-      case 3:
-        tmp = imu_data[0];
-        imu_data[0] = imu_data[2];
-        imu_data[1] = -imu_data[1];
-        imu_data[2] = tmp;
-        tmp = imu_data[3];
-        imu_data[3] = imu_data[5];
-        imu_data[4] = -imu_data[4];
-        imu_data[5] = tmp;
-        break;
-      case 4:
-        tmp = imu_data[0];
-        imu_data[0] = imu_data[2];
-        imu_data[2] = imu_data[1];
-        imu_data[1] = tmp;
-        tmp = imu_data[3];
-        imu_data[3] = imu_data[5];
-        imu_data[5] = imu_data[4];
-        imu_data[4] = tmp;
-        break;
-      default:
-        break;
+    case 1:
+      tmp = imu_data[0];
+      imu_data[0] = imu_data[1];
+      imu_data[1] = imu_data[2];
+      imu_data[2] = tmp;
+      tmp = imu_data[3];
+      imu_data[3] = imu_data[4];
+      imu_data[4] = imu_data[5];
+      imu_data[5] = tmp;
+      break;
+    case 2:
+      tmp = imu_data[0];
+      imu_data[0] = imu_data[1];
+      imu_data[1] = tmp;
+      tmp = imu_data[3];
+      imu_data[3] = imu_data[4];
+      imu_data[4] = tmp;
+      break;
+    case 3:
+      tmp = imu_data[0];
+      imu_data[0] = imu_data[2];
+      imu_data[1] = -imu_data[1];
+      imu_data[2] = tmp;
+      tmp = imu_data[3];
+      imu_data[3] = imu_data[5];
+      imu_data[4] = -imu_data[4];
+      imu_data[5] = tmp;
+      break;
+    case 4:
+      tmp = imu_data[0];
+      imu_data[0] = imu_data[2];
+      imu_data[2] = imu_data[1];
+      imu_data[1] = tmp;
+      tmp = imu_data[3];
+      imu_data[3] = imu_data[5];
+      imu_data[5] = imu_data[4];
+      imu_data[4] = tmp;
+      break;
+    default:
+      break;
   }
 }
 
 DriverLidar::DriverLidar(const LidarConfig& lidar_config) {
   param_ = lidar_config;
+
+  T_2_0_ = Eigen::Matrix4f::Identity();
   init_transform_matrix();
   input_parameter_check();
 
@@ -159,6 +161,7 @@ DriverLidar::DriverLidar(const LidarConfig& lidar_config) {
 
   data_buffer.resize(KBUF_SIZE);
   pcl_pc_ptr = pcl::PointCloud<SeyondPoint>::Ptr(new pcl::PointCloud<SeyondPoint>());
+  pcl_pc_ptr->points.reserve(reserve_size_);
 }
 
 DriverLidar::~DriverLidar() {
@@ -273,6 +276,7 @@ void DriverLidar::start_lidar() {
 
   is_running_ = true;
   start_check_datacallback_thread();
+  start_publish_thread();
 }
 
 void DriverLidar::stop_lidar() {
@@ -287,7 +291,21 @@ void DriverLidar::stop_lidar() {
   if (check_datacallback_thread_.joinable()) {
     check_datacallback_thread_.join();
   }
+
+  publish_thread_running_ = false;
+  pcl_pc_cv_.notify_all();
+  if (publish_thread_.joinable()) {
+    publish_thread_.join();
+  }
+
+  std::lock_guard<std::mutex> lock(pcl_pc_mutex_);
+  if (!frame_data_queue_.empty()) {
+    // clear queue
+    std::queue<FrameData> empty_queue;
+    std::swap(frame_data_queue_, empty_queue);
+  }
 }
+
 
 bool DriverLidar::setup_lidar() {
   if (param_.pcap_file.size() > 0) {
@@ -298,6 +316,11 @@ bool DriverLidar::setup_lidar() {
     }
 
     if (pcap_playback_process() != 0) {
+      return false;
+    }
+  } else if (param_.inno_pc_file.size() > 0) {
+    // inno pc replay
+    if (inno_pc_playback_process() != 0) {
       return false;
     }
   } else {
@@ -317,11 +340,6 @@ bool DriverLidar::setup_lidar() {
 
 int32_t DriverLidar::lidar_parameter_set() {
   int32_t ret = 0;
-  ret = set_config_name_value();
-  if (ret != 0) {
-    inno_log_warning("%s, set config name failed", param_.lidar_name.c_str());
-  }
-
   ret = inno_lidar_set_callbacks(lidar_handle_, lidar_message_callback_s, lidar_data_callback_s,
                                  lidar_status_callback_s, NULL, this);
   if (ret != 0) {
@@ -391,7 +409,7 @@ int32_t DriverLidar::lidar_live_process() {
   }
 
   if (param_.enable_falcon_ring) {
-    ret = ret = inno_lidar_set_attribute_string(lidar_handle_, "use_ring_id", "1");
+    ret = inno_lidar_set_attribute_string(lidar_handle_, "use_ring_id", "1");
     if (ret != 0) {
       inno_log_warning("%s, set use_ring_id failed", param_.lidar_name.c_str());
     }
@@ -405,19 +423,9 @@ int32_t DriverLidar::lidar_live_process() {
   return 0;
 }
 
-int32_t DriverLidar::pcap_playback_process() {
-  InputParam param;
-  param.pcap_param.source_type = SOURCE_PCAP;
-  strncpy(param.pcap_param.filename, param_.pcap_file.c_str(), param_.pcap_file.length() + 1);
-  strncpy(param.pcap_param.lidar_ip, param_.lidar_ip.c_str(), param_.lidar_ip.length() + 1);
-  param.pcap_param.data_port = param_.udp_port;
-  param.pcap_param.message_port = param_.udp_port;
-  param.pcap_param.status_port = param_.udp_port;
-  param.pcap_param.play_rate = param_.packet_rate;
-  param.pcap_param.rewind = param_.file_rewind;
-  inno_log_info("## pcap_file is %s, play_rate is %d, rewind id %d, udp port %d##", param_.pcap_file.c_str(),
-                param_.packet_rate, param_.file_rewind, param_.udp_port);
-  lidar_handle_ = inno_lidar_open_ctx(param_.lidar_name.c_str(), &param);
+int32_t DriverLidar::inno_pc_playback_process() {
+  lidar_handle_ = inno_lidar_open_file(param_.lidar_name.c_str(), param_.inno_pc_file.c_str(), false,
+                                       param_.packet_rate, param_.file_rewind, 0);
   if (lidar_handle_ < 0) {
     inno_log_error("FATAL: Lidar %s invalid handle", param_.lidar_name.c_str());
     return -1;
@@ -425,28 +433,28 @@ int32_t DriverLidar::pcap_playback_process() {
   return 0;
 }
 
-int32_t DriverLidar::set_config_name_value() {
-  if (param_.name_value_pairs.size() > 0) {
-    char *rest = NULL;
-    char *token;
-    char *nv = strdup(param_.name_value_pairs.c_str());
-    inno_log_info("Use name_value_pairs %s", param_.name_value_pairs.c_str());
-    if (nv) {
-      for (token = strtok_r(nv, ",", &rest); token != NULL; token = strtok_r(NULL, ",", &rest)) {
-        char *eq = strchr(token, '=');
-        if (eq) {
-          *eq = 0;
-          if (inno_lidar_set_config_name_value(lidar_handle_, token, eq + 1) != 0) {
-            inno_log_warning("bad name_value pairs %s", nv);
-            break;
-          }
-        } else {
-          inno_log_warning("bad name_value pairs %s", nv);
-          break;
-        }
-      }
-      free(nv);
-    }
+int32_t DriverLidar::pcap_playback_process() {
+  InputParam param;
+  param.pcap_param.source_type = SOURCE_PCAP;
+  if (param_.pcap_file.size() >= sizeof(param.pcap_param.filename)) {
+    inno_log_error("pcap_file path is too long, should be less than %lu", sizeof(param.pcap_param.filename));
+    return -1;
+  }
+  if (param_.lidar_ip.size() >= sizeof(param.pcap_param.lidar_ip)) {
+    inno_log_error("lidar_ip is too long, should be less than %lu", sizeof(param.pcap_param.lidar_ip));
+    return -1;
+  }
+  strncpy(param.pcap_param.filename, param_.pcap_file.c_str(), param_.pcap_file.length() + 1);
+  strncpy(param.pcap_param.lidar_ip, param_.lidar_ip.c_str(), param_.lidar_ip.length() + 1);
+  param.pcap_param.data_port = param_.udp_port;
+  param.pcap_param.message_port = param_.udp_port;
+  param.pcap_param.status_port = param_.udp_port;
+  param.pcap_param.play_rate = param_.packet_rate;
+  param.pcap_param.rewind = param_.file_rewind;
+  lidar_handle_ = inno_lidar_open_ctx(param_.lidar_name.c_str(), &param);
+  if (lidar_handle_ < 0) {
+    inno_log_error("FATAL: Lidar %s invalid handle", param_.lidar_name.c_str());
+    return -1;
   }
   return 0;
 }
@@ -472,9 +480,9 @@ int32_t DriverLidar::lidar_data_callback(const InnoDataPacket *pkt) {
     }
   }
 
-  bool is_next_frame  = false;
+  bool is_next_frame = false;
   if (current_frame_id_ != pkt->idx) {
-    is_next_frame  = true;
+    is_next_frame = true;
     current_frame_id_ = pkt->idx;
   }
 
@@ -487,9 +495,31 @@ int32_t DriverLidar::lidar_data_callback(const InnoDataPacket *pkt) {
   } else {
     if (is_next_frame) {
       transform_pointcloud();
-      frame_publish_cb_(*pcl_pc_ptr, frame_start_ts_);
+      bool is_empty = false;
+      pcl_pc_ptr->width = pcl_pc_ptr->points.size();
+      if (pcl_pc_ptr->width > reserve_size_) {
+        reserve_size_ = pcl_pc_ptr->width + 20000;
+      }
+      pcl_pc_ptr->height = 1;
+      {
+        std::unique_lock<std::mutex> lock(pcl_pc_mutex_);
+        is_empty = frame_data_queue_.empty();
+        if (frame_data_queue_.size() > 10) {
+          std::queue<FrameData> empty_queue;
+          std::swap(frame_data_queue_, empty_queue);
+          inno_log_warning("%s, publish queue is too long, drop old frames", param_.lidar_name.c_str());
+        }
+        FrameData frame_data;
+        frame_data.cloud_ptr = pcl_pc_ptr;
+        frame_data.timestamp = frame_start_ts_;
+        frame_data_queue_.push(frame_data);
+      }
+      if (is_empty) {
+        pcl_pc_cv_.notify_one();
+      }
       frame_start_ts_ = pkt->common.ts_start_us;
-      pcl_pc_ptr->clear();
+      pcl_pc_ptr = pcl::PointCloud<SeyondPoint>::Ptr(new pcl::PointCloud<SeyondPoint>());
+      pcl_pc_ptr->points.reserve(reserve_size_);
     }
     convert_and_parse(pkt);
   }
@@ -574,8 +604,6 @@ void DriverLidar::point_xyz_data_parse(bool is_use_refl, uint32_t point_num, Poi
 #endif
     coordinate_transfer(&point, param_.coordinate_mode, point_ptr->x, point_ptr->y, point_ptr->z);
     pcl_pc_ptr->points.push_back(point);
-    ++pcl_pc_ptr->width;
-    pcl_pc_ptr->height = 1;
   }
 }
 
@@ -590,23 +618,13 @@ void DriverLidar::lidar_message_callback(uint32_t from_remote, enum InnoMessageL
   } else if (level < INNO_MESSAGE_LEVEL_WARNING) {
     inno_log_error("%s%s level=%d, code=%d, message=%s", remote, inno_log_header_g[level], level, code, msg);
   }
-
-  if ((level <= INNO_MESSAGE_LEVEL_CRITICAL && code != INNO_MESSAGE_CODE_LIB_VERSION_MISMATCH) ||
-             (code == INNO_MESSAGE_CODE_CANNOT_READ)) {
-    fatal_error_ = true;
-  }
 }
 
 int32_t DriverLidar::lidar_status_callback(const InnoStatusPacket *pkt) {
-  // sanity check
-  if (!inno_lidar_check_status_packet(pkt, 0)) {
-    inno_log_error("%s, corrupted pkt->idx = %" PRI_SIZEU, param_.lidar_name.c_str(), pkt->idx);
-    return -1;
-  }
 
   if (param_.enable_imu_msg) {
     InnoStatusPacket tmp_pkt = *pkt;
-    if (static_cast<InnoLidarType>(tmp_pkt.common.lidar_type) == INNO_LIDAR_TYPE_FALCON) {
+    if (static_cast<InnoLidarType>(pkt->common.lidar_type) == INNO_LIDAR_TYPE_FALCON) {
       inno_lidar_correct_imu_status(pkt, &tmp_pkt);
     }
     std::vector<float> imu_data;
@@ -627,22 +645,30 @@ int32_t DriverLidar::lidar_status_callback(const InnoStatusPacket *pkt) {
 
     // ensure imu data in lidar coordinate before transform
     coordinate_imu(imu_data, param_.coordinate_mode);
+
+    if (param_.transform_enable) {
+      Eigen::Matrix3f R = T_2_0_.block<3, 3>(0, 0);
+      Eigen::Vector3f accel(imu_data[0], imu_data[1], imu_data[2]);
+      Eigen::Vector3f gyro(imu_data[3], imu_data[4], imu_data[5]);
+      accel = R * accel;
+      gyro = R * gyro;
+      imu_data[0] = accel(0); imu_data[1] = accel(1); imu_data[2] = accel(2);
+      imu_data[3] = gyro(0);  imu_data[4] = gyro(1);  imu_data[5] = gyro(2);
+    }
+
     uint64_t imu_timestamp = (tmp_pkt.sensor_readings.imu_ts_nsec == 0)
-                                 ? static_cast<uint64_t>(pkt->common.ts_start_us * 1000)
+                                 ? static_cast<uint64_t> (pkt->common.ts_start_us  * 1000)
                                  : tmp_pkt.sensor_readings.imu_ts_nsec;
     imu_data_publish_cb_(imu_data, imu_timestamp);
   }
 
-  static uint64_t cnt = 0;
-  if (cnt++ % 100 == 1) {
+  if (pkt->idx % 200 == 0) {
     constexpr uint64_t buf_size = 2048;
     char buf[buf_size]{0};
 
     int32_t ret = inno_lidar_printf_status_packet(pkt, buf, buf_size);
     if (ret > 0) {
-      inno_log_info("%s, Received status packet #%" PRI_SIZELU ": %s", param_.lidar_name.c_str(), cnt, buf);
-    } else {
-      inno_log_warning("%s, Received status packet #%" PRI_SIZELU ": errorno: %d", param_.lidar_name.c_str(), cnt, ret);
+      inno_log_info("%s, Received status packet #%" PRI_SIZELU ": %s", param_.lidar_name.c_str(), pkt->idx, buf);
     }
   }
   return 0;
@@ -693,19 +719,42 @@ void DriverLidar::start_check_datacallback_thread() {
         is_receive_data_ = false;
         inno_log_info("%s is alive", param_.lidar_name.c_str());
       }
-      // fatal error, reconnect
-      if (fatal_error_ && param_.continue_live) {
-        fatal_error_ = false;
-        stop_lidar();
-        start_lidar();
-        break;
-      }
       {
         std::unique_lock<std::mutex> lock(running_mutex_);
         running_cv_.wait_for(lock, std::chrono::seconds(10));
       }
     }
     inno_log_info("%s is stopped", param_.lidar_name.c_str());
+  });
+}
+
+void DriverLidar::start_publish_thread() {
+  publish_thread_running_ = true;
+  publish_thread_ = std::thread([this]() {
+    while (publish_thread_running_) {
+      std::unique_lock<std::mutex> lock(pcl_pc_mutex_);
+      pcl_pc_cv_.wait_for(lock, std::chrono::milliseconds(150),
+                  [this] { return !frame_data_queue_.empty() || !publish_thread_running_; });
+      if (!publish_thread_running_) {
+        break;
+      }
+      while (!frame_data_queue_.empty()) {
+        auto data = frame_data_queue_.front();
+        frame_data_queue_.pop();
+        lock.unlock();
+        std::chrono::time_point<std::chrono::steady_clock> start_time = std::chrono::steady_clock::now();
+        if (frame_publish_cb_) {
+          frame_publish_cb_(*(data.cloud_ptr), data.timestamp);
+        }
+        std::chrono::time_point<std::chrono::steady_clock> end_time = std::chrono::steady_clock::now();
+        std::chrono::duration<double> elapsed_seconds = end_time - start_time;
+        if (elapsed_seconds.count() > 0.05) {
+          inno_log_warning("%s, publish pointcloud takes %.3f seconds",
+                           param_.lidar_name.c_str(), elapsed_seconds.count());
+        }
+        lock.lock();
+      }
+    }
   });
 }
 

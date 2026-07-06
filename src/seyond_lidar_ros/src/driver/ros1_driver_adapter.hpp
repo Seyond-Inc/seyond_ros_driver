@@ -1,5 +1,5 @@
 /**********************************************************************************************************************
-Copyright (c) 2025 Seyond
+Copyright (c) 2024 Seyond
 All rights reserved
 
 By downloading, copying, installing or using the software you agree to this license. If you do not agree to this
@@ -107,8 +107,8 @@ class ROSAdapter {
       pcl::toROSMsg(*driver_ptr_->pcl_pc_ptr, ros_msg);
       ros_msg.header.frame_id = lidar_config_.frame_id;
       ros_msg.header.stamp = ros::Time().fromSec(msg->timestamp * 1e-6);
-      ros_msg.width = driver_ptr_->pcl_pc_ptr->width;
-      ros_msg.height = driver_ptr_->pcl_pc_ptr->height;
+      ros_msg.width = driver_ptr_->pcl_pc_ptr->points.size();
+      ros_msg.height = 1;
       inno_frame_pub_.publish(std::move(ros_msg));
       driver_ptr_->pcl_pc_ptr->clear();
     }
@@ -154,7 +154,7 @@ class ROSAdapter {
     inno_frame_pub_.publish(std::move(ros_msg));
   }
 
-  void publishImu(std::vector<float> &imu_data, uint64_t imu_ts_ns) {
+  void publishImu(const std::vector<float>& imu_data, uint64_t imu_ts_ns) {
     sensor_msgs::Imu ros_msg;
     ros_msg.header.frame_id = lidar_config_.frame_id;
     ros_msg.header.stamp.sec = imu_ts_ns / 1000000000;
@@ -232,6 +232,10 @@ class ROSNode {
     // common
     private_nh_->param("log_level", common_config_.log_level, std::string("info"));
     common_config_.fusion_enable = false;
+    // unused parameters, but still set default values
+    common_config_.fusion_topic = "/iv_points_fusion";
+    common_config_.fusion_time_window = 50;
+    common_config_.fusion_buffer_size = 10;
 
     // Parse parameters for ros
     private_nh_->param("replay_rosbag", lidar_config.replay_rosbag, false);
@@ -253,14 +257,14 @@ class ROSNode {
 
     private_nh_->param("continue_live", lidar_config.continue_live, false);
 
+    private_nh_->param("inno_pc_file", lidar_config.inno_pc_file, std::string(""));
     private_nh_->param("pcap_file", lidar_config.pcap_file, std::string(""));
     private_nh_->param("hv_table_file", lidar_config.hv_table_file, std::string(""));
     private_nh_->param("packet_rate", lidar_config.packet_rate, 10000);
     private_nh_->param("file_rewind", lidar_config.file_rewind, 0);
 
     private_nh_->param("max_range", lidar_config.max_range, 2000.0);  // unit: meter
-    private_nh_->param("min_range", lidar_config.min_range, 0.4);     // unit: meter
-    private_nh_->param("name_value_pairs", lidar_config.name_value_pairs, std::string(""));
+    private_nh_->param("min_range", lidar_config.min_range, 0.1);     // unit: meter
     private_nh_->param("coordinate_mode", lidar_config.coordinate_mode, 3);
 
     private_nh_->param("transform_enable", lidar_config.transform_enable, false);
