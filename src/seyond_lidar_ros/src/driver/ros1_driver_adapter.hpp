@@ -63,20 +63,26 @@ class ROSAdapter {
   }
 
   void init() {
-    inno_frame_pub_ = nh_->advertise<sensor_msgs::PointCloud2>(lidar_config_.frame_topic.c_str(), 10);
+    std::string pointcloud_topic = lidar_config_.topic_prefix + "/pointcloud";
+    std::string packet_topic = lidar_config_.topic_prefix + "/packet";
+    std::string imu_topic = lidar_config_.topic_prefix + "/imu";
+    inno_frame_pub_ = nh_->advertise<sensor_msgs::PointCloud2>(pointcloud_topic.c_str(), 10);
     driver_ptr_->register_publish_frame_callback(
         std::bind(&ROSAdapter::publishFrame, this, std::placeholders::_1, std::placeholders::_2));
 
-    if (lidar_config_.packet_mode || lidar_config_.replay_rosbag) {
-      inno_pkt_pub_ = nh_->advertise<seyond::SeyondScan>(lidar_config_.packet_topic.c_str(), 100);
-      inno_pkt_sub_ = nh_->subscribe(lidar_config_.packet_topic.c_str(), 100, &ROSAdapter::subscribePacket, this);
+    if (lidar_config_.packet_mode) {
+      inno_pkt_pub_ = nh_->advertise<seyond::SeyondScan>(packet_topic.c_str(), 100);
       driver_ptr_->register_publish_packet_callback(std::bind(&ROSAdapter::publishPacket, this, std::placeholders::_1,
                                                               std::placeholders::_2, std::placeholders::_3,
                                                               std::placeholders::_4));
     }
 
+    if (lidar_config_.replay_rosbag) {
+      inno_pkt_sub_ = nh_->subscribe(packet_topic.c_str(), 100, &ROSAdapter::subscribePacket, this);
+    }
+
     if (lidar_config_.enable_imu_msg) {
-      inno_imu_pub_ = nh_->advertise<sensor_msgs::Imu>("/iv_imu", 10);
+      inno_imu_pub_ = nh_->advertise<sensor_msgs::Imu>(imu_topic.c_str(), 10);
       driver_ptr_->register_publish_imu_callback(
           std::bind(&ROSAdapter::publishImu, this, std::placeholders::_1, std::placeholders::_2));
     }
@@ -93,7 +99,7 @@ class ROSAdapter {
  private:
   void subscribePacket(const seyond::SeyondScan::ConstPtr &msg) {
     for (const auto &pkt : msg->packets) {
-      if (lidar_config_.replay_rosbag && pkt.has_table && !driver_ptr_->anglehv_table_init_) {
+      if (pkt.has_table && !driver_ptr_->anglehv_table_init_) {
         driver_ptr_->anglehv_table_.resize(pkt.table.size());
         std::memcpy(driver_ptr_->anglehv_table_.data(), pkt.table.data(), pkt.table.size());
         driver_ptr_->anglehv_table_init_ = true;
@@ -233,7 +239,7 @@ class ROSNode {
     private_nh_->param("log_level", common_config_.log_level, std::string("info"));
     common_config_.fusion_enable = false;
     // unused parameters, but still set default values
-    common_config_.fusion_topic = "/iv_points_fusion";
+    common_config_.fusion_topic = "/seyond_lidar/fusion";
     common_config_.fusion_time_window = 50;
     common_config_.fusion_buffer_size = 10;
 
@@ -242,11 +248,10 @@ class ROSNode {
     private_nh_->param("packet_mode", lidar_config.packet_mode, false);
     private_nh_->param("aggregate_num", lidar_config.aggregate_num, 20);
     private_nh_->param("frame_id", lidar_config.frame_id, std::string("seyond"));
-    private_nh_->param("frame_topic", lidar_config.frame_topic, std::string("iv_points"));
-    private_nh_->param("packet_topic", lidar_config.packet_topic, std::string("iv_packets"));
+    private_nh_->param("topic_prefix", lidar_config.topic_prefix, std::string("seyond_lidar"));
+    lidar_config.lidar_name = lidar_config.topic_prefix;
 
     // Parse parameters for driver
-    private_nh_->param("lidar_name", lidar_config.lidar_name, std::string("seyond"));
     private_nh_->param("lidar_ip", lidar_config.lidar_ip, std::string("172.168.1.10"));
     private_nh_->param("port", lidar_config.port, 8010);
     private_nh_->param("udp_port", lidar_config.udp_port, 8010);

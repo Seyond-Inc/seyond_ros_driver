@@ -71,21 +71,27 @@ class ROSAdapter {
   void init() {
     rclcpp::QoS qos(rclcpp::KeepLast(10));
     qos.reliable();
-    inno_frame_pub_ = node_ptr_->create_publisher<sensor_msgs::msg::PointCloud2>(lidar_config_.frame_topic, qos);
+    std::string pointcloud_topic = lidar_config_.topic_prefix + "/pointcloud";
+    std::string packet_topic = lidar_config_.topic_prefix + "/packet";
+    std::string imu_topic = lidar_config_.topic_prefix + "/imu";
+    inno_frame_pub_ = node_ptr_->create_publisher<sensor_msgs::msg::PointCloud2>(pointcloud_topic, qos);
     driver_ptr_->register_publish_frame_callback(
         std::bind(&ROSAdapter::publishFrame, this, std::placeholders::_1, std::placeholders::_2));
 
-    if (lidar_config_.packet_mode || lidar_config_.replay_rosbag) {
-      inno_pkt_pub_ = node_ptr_->create_publisher<seyond::msg::SeyondScan>(lidar_config_.packet_topic, 100);
-      inno_pkt_sub_ = node_ptr_->create_subscription<seyond::msg::SeyondScan>(
-          lidar_config_.packet_topic, 100, std::bind(&ROSAdapter::subscribePacket, this, std::placeholders::_1));
+    if (lidar_config_.packet_mode) {
+      inno_pkt_pub_ = node_ptr_->create_publisher<seyond::msg::SeyondScan>(packet_topic, 100);
       driver_ptr_->register_publish_packet_callback(std::bind(&ROSAdapter::publishPacket, this, std::placeholders::_1,
                                                               std::placeholders::_2, std::placeholders::_3,
                                                               std::placeholders::_4));
     }
 
+    if (lidar_config_.replay_rosbag) {
+      inno_pkt_sub_ = node_ptr_->create_subscription<seyond::msg::SeyondScan>(
+          packet_topic, 100, std::bind(&ROSAdapter::subscribePacket, this, std::placeholders::_1));
+    }
+
     if (lidar_config_.enable_imu_msg) {
-      inno_imu_pub_ = node_ptr_->create_publisher<sensor_msgs::msg::Imu>("/iv_imu", qos);
+      inno_imu_pub_ = node_ptr_->create_publisher<sensor_msgs::msg::Imu>(imu_topic, qos);
       driver_ptr_->register_publish_imu_callback(
           std::bind(&ROSAdapter::publishImu, this, std::placeholders::_1, std::placeholders::_2));
     }
@@ -102,7 +108,7 @@ class ROSAdapter {
  private:
   void subscribePacket(const seyond::msg::SeyondScan::SharedPtr msg) {
     for (const auto& pkt : msg->packets) {
-      if (lidar_config_.replay_rosbag && pkt.has_table && !driver_ptr_->anglehv_table_init_) {
+      if (pkt.has_table && !driver_ptr_->anglehv_table_init_) {
         driver_ptr_->anglehv_table_.resize(pkt.table.size());
         std::memcpy(driver_ptr_->anglehv_table_.data(), pkt.table.data(), pkt.table.size());
         driver_ptr_->anglehv_table_init_ = true;
@@ -248,7 +254,7 @@ class ROSNode {
     node_ptr_->get_parameter_or<std::string>("log_level", common_config_.log_level, "info");
     common_config_.fusion_enable = false;
     // unused parameters, but still set default values
-    common_config_.fusion_topic = "/iv_points_fusion";
+    common_config_.fusion_topic = "/seyond_lidar/fusion";
     common_config_.fusion_time_window = 50;
     common_config_.fusion_buffer_size = 10;
 
@@ -257,11 +263,10 @@ class ROSNode {
     node_ptr_->get_parameter_or<bool>("packet_mode", lidar_config.packet_mode, false);
     node_ptr_->get_parameter_or<int32_t>("aggregate_num", lidar_config.aggregate_num, 20);
     node_ptr_->get_parameter_or<std::string>("frame_id", lidar_config.frame_id, "seyond");
-    node_ptr_->get_parameter_or<std::string>("frame_topic", lidar_config.frame_topic, "iv_points");
-    node_ptr_->get_parameter_or<std::string>("packet_topic", lidar_config.packet_topic, "iv_packets");
+    node_ptr_->get_parameter_or<std::string>("topic_prefix", lidar_config.topic_prefix, "seyond_lidar");
+    lidar_config.lidar_name = lidar_config.topic_prefix;  // use topic_prefix as lidar name
 
     // Parse parameters for driver
-    node_ptr_->get_parameter_or<std::string>("lidar_name", lidar_config.lidar_name, "seyond");
     node_ptr_->get_parameter_or<std::string>("lidar_ip", lidar_config.lidar_ip, "172.168.1.10");
     node_ptr_->get_parameter_or<int32_t>("port", lidar_config.port, 8010);
     node_ptr_->get_parameter_or<int32_t>("udp_port", lidar_config.udp_port, 8010);

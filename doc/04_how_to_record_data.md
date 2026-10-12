@@ -2,7 +2,7 @@
 
 ## 4.1 Related Parameters
 
-**packet_mode**: Enable packet_topic to publish packet data.
+**packet_mode**: Enable to publish packet data on <topic_prefix>/packet.
 
 **aggregate_num**(optional): Controls the frequency of packet publishing when packet_mode is enabled.
 
@@ -16,15 +16,15 @@
 ```bash
 // ros
 // record packet bag
-rosbag record /iv_packets
+rosbag record /seyond_lidar/packet
 // record pointcloud
-rosbag record /iv_points
+rosbag record /seyond_lidar/pointcloud
 
 // ros2
 // record packet bag
-ros2 bag record /iv_packets
+ros2 bag record /seyond_lidar/packet
 // record pointcloud
-ros2 bag record /iv_points
+ros2 bag record /seyond_lidar/pointcloud
 ```
 
 ## 4.3 Replay

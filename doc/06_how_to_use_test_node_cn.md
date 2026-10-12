@@ -4,8 +4,7 @@
 
 | Parameter         | Default Value | description          |
 | ------------      | ------------- | -------------------- |
-| frame_topic       | /iv_points    | 待测试的frame topic   |
-| packet_topic      | /iv_packets   | 待测试的packet topic  |
+| topic_prefix      | /seyond_lidar | 待测试的topic prefix  |
 | hz                | false         | 输出帧率和帧平均点数    |
 | window            | 30            | 频率计算窗口大小       |
 | stamp             | false         | 输出帧时间戳          |

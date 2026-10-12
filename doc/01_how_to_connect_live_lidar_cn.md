@@ -16,17 +16,13 @@ common:
   log_level: info                                     #Log level: info, warn, error
 lidars:
   - lidar:
-      frame_topic: /iv_points                         #Frame topic
-
-      lidar_name: seyond                              #Lidar name
+      topic_prefix: /seyond_lidar                     #Topic prefix  ~/pointcloud, ~/packet, ~/imu
       lidar_ip: 172.168.1.10                          #Lidar ip
       port: 8010                                      #Lidar port
       udp_port: 8010                                  #Udp port, if < 0, use tcp
 
   - lidar:
-      frame_topic: /iv_points1                        #Frame topic
-
-      lidar_name: seyond1                             #Lidar name
+      topic_prefix: /seyond_lidar1                    #Topic prefix  ~/pointcloud, ~/packet, ~/imu
       lidar_ip: 172.168.1.11                          #Lidar ip
       port: 8011                                      #Lidar port
       udp_port: 8011                                  #Udp port, if < 0, use tcp

@@ -48,20 +48,9 @@ def generate_launch_description():
                 description='ros frame id'
             ),
             DeclareLaunchArgument(
-                'frame_topic',
-                default_value='iv_points',
-                description='output topic name'
-            ),
-            DeclareLaunchArgument(
-                'packet_topic',
-                default_value='iv_packets',
-                description='output topic name'
-            ),
-
-            DeclareLaunchArgument(
-                'lidar_name',
-                default_value='seyond',
-                description='lidar name'
+                'topic_prefix',
+                default_value='seyond_lidar',
+                description='output topic_prefix'
             ),
             DeclareLaunchArgument(
                 'lidar_ip',
@@ -197,9 +186,7 @@ def generate_launch_description():
                     {'packet_mode': LaunchConfiguration('packet_mode')},
                     {'aggregate_num': LaunchConfiguration('aggregate_num')},
                     {'frame_id': LaunchConfiguration('frame_id')},
-                    {'frame_topic': LaunchConfiguration('frame_topic')},
-                    {'packet_topic': LaunchConfiguration('packet_topic')},
-                    {'lidar_name': LaunchConfiguration('lidar_name')},
+                    {'topic_prefix': LaunchConfiguration('topic_prefix')},
                     {'lidar_ip': LaunchConfiguration('lidar_ip')},
                     {'port': LaunchConfiguration('port')},
                     {'udp_port': LaunchConfiguration('udp_port')},

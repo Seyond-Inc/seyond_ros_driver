@@ -1,5 +1,5 @@
 /**********************************************************************************************************************
-Copyright (c) 2025 Seyond
+Copyright (c) 2024 Seyond
 All rights reserved
 
 By downloading, copying, installing or using the software you agree to this license. If you do not agree to this
@@ -69,6 +69,7 @@ class ROSDemo {
   rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr inno_frame_sub_{nullptr};
   rclcpp::Subscription<seyond::msg::SeyondScan>::SharedPtr inno_pkt_sub_{nullptr};
 
+  std::string topic_prefix_;
   std::string packet_topic_;
   std::string frame_topic_;
   std::chrono::steady_clock::time_point curr_time_;
@@ -90,7 +91,7 @@ class ROSDemo {
   bool is_print_packet_loss_rate_{false};
 };
 
-ROSDemo::~ROSDemo() {
+inline ROSDemo::~ROSDemo() {
   if (is_print_packet_loss_rate_) {
     total_expected_packets_count_ += last_sub_seq_ - cur_start_sub_seq_;
     ROS_INFO(
@@ -100,13 +101,14 @@ ROSDemo::~ROSDemo() {
   }
 }
 
-void ROSDemo::init() {
+inline void ROSDemo::init() {
   node_ptr_ = rclcpp::Node::make_shared("test", rclcpp::NodeOptions()
                                                     .allow_undeclared_parameters(true)
                                                     .automatically_declare_parameters_from_overrides(true)
                                                     .use_intra_process_comms(true));
-  node_ptr_->get_parameter_or<std::string>("frame_topic", frame_topic_, "iv_points");
-  node_ptr_->get_parameter_or<std::string>("packet_topic", packet_topic_, "iv_packets");
+  node_ptr_->get_parameter_or<std::string>("topic_prefix", topic_prefix_, "seyond_lidar");
+  frame_topic_ = topic_prefix_ + "/pointcloud";
+  packet_topic_ = topic_prefix_ + "/packet";
   node_ptr_->get_parameter_or<bool>("stamp", is_print_frame_stamp_, false);
   node_ptr_->get_parameter_or<bool>("hz", is_print_frame_hz_, false);
   node_ptr_->get_parameter_or<int32_t>("window", window_, 30);
@@ -128,20 +130,20 @@ void ROSDemo::init() {
       packet_topic_, 100, std::bind(&ROSDemo::subscribePacket, this, std::placeholders::_1));
 }
 
-void ROSDemo::spin() {
+inline void ROSDemo::spin() {
   rclcpp::spin(this->node_ptr_);
 }
 
-void ROSDemo::subscribePointCloud(const sensor_msgs::msg::PointCloud2::SharedPtr msg) {
+inline void ROSDemo::subscribePointCloud(const sensor_msgs::msg::PointCloud2::SharedPtr msg) {
   if (is_print_frame_stamp_) printFrameStamp(msg);
   if (is_print_frame_hz_) printFrameHZ(msg);
 }
 
-void ROSDemo::printFrameStamp(const sensor_msgs::msg::PointCloud2::SharedPtr &msg) {
+inline void ROSDemo::printFrameStamp(const sensor_msgs::msg::PointCloud2::SharedPtr &msg) {
   ROS_INFO("sec: %d, nanosec: %09d", msg->header.stamp.sec, msg->header.stamp.nanosec);
 }
 
-void ROSDemo::printFrameHZ(const sensor_msgs::msg::PointCloud2::SharedPtr &msg) {
+inline void ROSDemo::printFrameHZ(const sensor_msgs::msg::PointCloud2::SharedPtr &msg) {
   static int32_t i = 0;
   if (first_time_) {
     last_time_ = std::chrono::steady_clock::now();
@@ -160,12 +162,12 @@ void ROSDemo::printFrameHZ(const sensor_msgs::msg::PointCloud2::SharedPtr &msg) 
   }
 }
 
-void ROSDemo::subscribePacket(const seyond::msg::SeyondScan::SharedPtr msg) {
+inline void ROSDemo::subscribePacket(const seyond::msg::SeyondScan::SharedPtr msg) {
   if (is_print_packet_size_) printPacketSize(msg);
   if (is_print_packet_loss_rate_) printPacketLossRate(msg);
 }
 
-void ROSDemo::printPacketSize(const seyond::msg::SeyondScan::SharedPtr &msg) {
+inline void ROSDemo::printPacketSize(const seyond::msg::SeyondScan::SharedPtr &msg) {
   packet_size_ += msg->size;
   if (msg->is_last_scan) {
     ROS_INFO("packet size per frame: %d", packet_size_);
@@ -173,7 +175,7 @@ void ROSDemo::printPacketSize(const seyond::msg::SeyondScan::SharedPtr &msg) {
   }
 }
 
-void ROSDemo::printPacketLossRate(const seyond::msg::SeyondScan::SharedPtr &msg) {
+inline void ROSDemo::printPacketLossRate(const seyond::msg::SeyondScan::SharedPtr &msg) {
   packet_size_ += msg->size;
   for (const auto &packet : msg->packets) {
     received_packets_count_++;

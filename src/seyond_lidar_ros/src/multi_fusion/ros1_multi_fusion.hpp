@@ -113,11 +113,11 @@ inline MultiFusion::MultiFusion(std::shared_ptr<ros::NodeHandle> nh,
 
   topic_names_.reserve(lidar_num_);
   for (const auto &cfg : lidar_configs) {
-    topic_names_.push_back(cfg.frame_topic);
+    topic_names_.push_back(cfg.topic_prefix + "/pointcloud");
   }
 
   primary_sub_ = nh_->subscribe<sensor_msgs::PointCloud2>(
-      lidar_configs[0].frame_topic, buffer_size_,
+      lidar_configs[0].topic_prefix + "/pointcloud", buffer_size_,
       [this](const sensor_msgs::PointCloud2ConstPtr &msg) {
         this->onPrimary(msg);
       });
@@ -126,7 +126,7 @@ inline MultiFusion::MultiFusion(std::shared_ptr<ros::NodeHandle> nh,
   for (int32_t i = 1; i < lidar_num_; i++) {
     int32_t idx = i - 1;
     secondary_subs_[idx] = nh_->subscribe<sensor_msgs::PointCloud2>(
-        lidar_configs[i].frame_topic, buffer_size_,
+        lidar_configs[i].topic_prefix + "/pointcloud", buffer_size_,
         [this, idx](const sensor_msgs::PointCloud2ConstPtr &msg) {
           this->onSecondary(idx, msg);
         });

@@ -64,13 +64,11 @@ sudo apt-get install -y  libyaml-cpp-dev
 | --- | --- | --- |
 | config_path | ""  | 配置输入，如果配置了该项，其他命令行参数将忽视 |
 | log_level | info | 驱动日志输出限制，选项: info warn error |
-| replay_rosbag | false | packet rosbag 回放标志，监听外部的packet_topic数据包并解析 |
-| packet_mode | false | 启用packet模式，将会开启packet_topic，发布packet数据包 |
+| replay_rosbag | false | packet rosbag 回放标志，监听外部的packet数据包并解析 |
+| packet_mode | false | 启用packet模式，将会开启packet topic，发布packet数据包 |
 | aggregate_num | 20  | 设置packet模式的包聚合数量 |
 | frame_id | seyond | - |
-| frame_topic | iv_points | - |
-| packet_topic | iv_packets | - |
-| lidar_name | seyond | 雷达名，用于区分日志消息 |
+| topic_prefix | /seyond_lidar | topic 前缀，topic 为 <topic_prefix>/pointcloud, <topic_prefix>/packet, <topic_prefix>/imu |
 | lidar_ip | 172.168.1.10 | - |
 | port | 8010 | 雷达源服务端口 |
 | udp_port | 8010 | 雷达端配置的UDP目的端口 |

@@ -25,10 +25,7 @@ common:
 lidars:
   - lidar:
       frame_id: seyond                                #Frame id
-      packet_topic: /iv_packets                       #Packet topic
-      frame_topic: /iv_points                         #Frame topic
-
-      lidar_name: seyond                              #Lidar name
+      topic_prefix: /seyond_lidar                     #Topic prefix  ~/pointcloud, ~/packet, ~/imu
       lidar_ip: 172.168.1.10                          #Lidar ip
       udp_port: 8010                                  #Udp port, if < 0, use tcp
 

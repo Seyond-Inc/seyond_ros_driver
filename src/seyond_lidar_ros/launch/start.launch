@@ -14,13 +14,9 @@
   <arg name="aggregate_num" default="20" />
   <!-- the id of the frame data -->
   <arg name="frame_id" default="seyond" />
-  <!-- the topic name of the frame -->
-  <arg name="frame_topic" default="/iv_points" />
-  <!-- the topic name of the packets -->
-  <arg name="packet_topic" default="/iv_packets" />
+  <!-- the topic_prefix of the lidar -->
+  <arg name="topic_prefix" default="/seyond_lidar" />
 
-  <!-- the name of lidar -->
-  <arg name="lidar_name" default="seyond" />
   <!-- the IP address of the lidar device -->
   <arg name="lidar_ip" default="172.168.1.10" />
   <!-- the port of lidar -->
@@ -76,10 +72,8 @@
     <param name="packet_mode" value="$(arg packet_mode)"/>
     <param name="aggregate_num" value="$(arg aggregate_num)"/>
     <param name="frame_id" value="$(arg frame_id)"/>
-    <param name="frame_topic" value="$(arg frame_topic)"/>
-    <param name="packet_topic" value="$(arg packet_topic)"/>
+    <param name="topic_prefix" value="$(arg topic_prefix)"/>
 
-    <param name="lidar_name" value="$(arg lidar_name)"/>
     <param name="lidar_ip" value="$(arg lidar_ip)"/>
     <param name="port" value="$(arg port)"/>
     <param name="udp_port" value="$(arg udp_port)"/>

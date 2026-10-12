@@ -8,7 +8,7 @@
 struct EIGEN_ALIGN16 PointXYZIT {
   PCL_ADD_POINT4D;
   double timestamp;
-  std::uint16_t intensity;
+  float intensity;
   std::uint8_t flags;
   std::uint8_t elongation;
   std::uint16_t scan_id;

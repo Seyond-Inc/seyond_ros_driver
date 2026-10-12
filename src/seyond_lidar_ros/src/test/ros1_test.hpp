@@ -1,5 +1,5 @@
 /**********************************************************************************************************************
-Copyright (c) 2025 Seyond
+Copyright (c) 2024 Seyond
 All rights reserved
 
 By downloading, copying, installing or using the software you agree to this license. If you do not agree to this
@@ -26,6 +26,7 @@ SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSE
 WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 **********************************************************************************************************************/
+
 
 #pragma once
 #include <ros/ros.h>
@@ -63,6 +64,7 @@ class ROSDemo {
   ros::Subscriber inno_frame_sub_;
   ros::Subscriber inno_pkt_sub_;
 
+  std::string topic_prefix_;
   std::string packet_topic_;
   std::string frame_topic_;
   std::chrono::steady_clock::time_point curr_time_;
@@ -84,7 +86,7 @@ class ROSDemo {
   bool is_print_packet_loss_rate_{false};
 };
 
-ROSDemo::~ROSDemo() {
+inline ROSDemo::~ROSDemo() {
   if (is_print_packet_loss_rate_) {
     total_expected_packets_count_ += last_sub_seq_ - cur_start_sub_seq_;
     ROS_INFO(
@@ -94,11 +96,12 @@ ROSDemo::~ROSDemo() {
   }
 }
 
-void ROSDemo::init() {
+inline void ROSDemo::init() {
   nh_ = std::make_shared<ros::NodeHandle>();
   private_nh_ = std::make_unique<ros::NodeHandle>("~");
-  private_nh_->param("frame_topic", frame_topic_, std::string("iv_points"));
-  private_nh_->param("packet_topic", packet_topic_, std::string("iv_packets"));
+  private_nh_->param("topic_prefix", topic_prefix_, std::string("seyond_lidar"));
+  frame_topic_ = topic_prefix_ + "/pointcloud";
+  packet_topic_ = topic_prefix_ + "/packet";
   private_nh_->param("stamp", is_print_frame_stamp_, false);
   private_nh_->param("hz", is_print_frame_hz_, false);
   private_nh_->param("window", window_, 30);
@@ -118,20 +121,20 @@ void ROSDemo::init() {
   inno_pkt_sub_ = nh_->subscribe(packet_topic_.c_str(), 100, &ROSDemo::subscribePacket, this);
 }
 
-void ROSDemo::spin() {
+inline void ROSDemo::spin() {
   ros::spin();
 }
 
-void ROSDemo::subscribePointCloud(const sensor_msgs::PointCloud2ConstPtr &msg) {
+inline void ROSDemo::subscribePointCloud(const sensor_msgs::PointCloud2ConstPtr &msg) {
   if (is_print_frame_stamp_) printFrameStamp(msg);
   if (is_print_frame_hz_) printFrameHZ(msg);
 }
 
-void ROSDemo::printFrameStamp(const sensor_msgs::PointCloud2ConstPtr &msg) {
+inline void ROSDemo::printFrameStamp(const sensor_msgs::PointCloud2ConstPtr &msg) {
   ROS_INFO("sec: %d, nanosec: %09d", msg->header.stamp.sec, msg->header.stamp.nsec);
 }
 
-void ROSDemo::printFrameHZ(const sensor_msgs::PointCloud2ConstPtr &msg) {
+inline void ROSDemo::printFrameHZ(const sensor_msgs::PointCloud2ConstPtr &msg) {
   static int32_t i = 0;
   if (first_time_) {
     last_time_ = std::chrono::steady_clock::now();
@@ -150,12 +153,12 @@ void ROSDemo::printFrameHZ(const sensor_msgs::PointCloud2ConstPtr &msg) {
   }
 }
 
-void ROSDemo::subscribePacket(const seyond::SeyondScan::ConstPtr &msg) {
+inline void ROSDemo::subscribePacket(const seyond::SeyondScan::ConstPtr &msg) {
   if (is_print_packet_size_) printPacketSize(msg);
   if (is_print_packet_loss_rate_) printPacketLossRate(msg);
 }
 
-void ROSDemo::printPacketSize(const seyond::SeyondScan::ConstPtr &msg) {
+inline void ROSDemo::printPacketSize(const seyond::SeyondScan::ConstPtr &msg) {
   packet_size_ += msg->size;
   if (msg->is_last_scan) {
     ROS_INFO("packet size per frame: %d", packet_size_);
@@ -163,7 +166,7 @@ void ROSDemo::printPacketSize(const seyond::SeyondScan::ConstPtr &msg) {
   }
 }
 
-void ROSDemo::printPacketLossRate(const seyond::SeyondScan::ConstPtr &msg) {
+inline void ROSDemo::printPacketLossRate(const seyond::SeyondScan::ConstPtr &msg) {
   packet_size_ += msg->size;
   for (const auto &packet : msg->packets) {
     received_packets_count_++;

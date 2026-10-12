@@ -60,7 +60,7 @@ namespace seyond {
 struct CommonConfig {
   std::string log_level = "info";
   bool fusion_enable = false;
-  std::string fusion_topic = "/iv_points_fusion";
+  std::string fusion_topic = "/seyond_lidar/fusion";
   int32_t fusion_time_window = 50;
   int32_t fusion_buffer_size = 10;
 };
@@ -73,8 +73,7 @@ struct LidarConfig {
   int32_t aggregate_num = 20;
 
   std::string frame_id = "seyond";
-  std::string packet_topic = "/iv_packet";
-  std::string frame_topic = "/iv_points";
+  std::string topic_prefix = "/seyond_lidar";
 
   std::string lidar_name = "seyond";
   std::string lidar_ip = "172.168.1.10";

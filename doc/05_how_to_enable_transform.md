@@ -28,9 +28,7 @@ common:
   log_level: info                                     #Log level: info, warn, error
 lidars:
   - lidar:
-      frame_topic: /iv_points                         #Frame topic
-
-      lidar_name: seyond                              #Lidar name
+      topic_prefix: /seyond_lidar                     #Topic prefix  ~/pointcloud, ~/packet, ~/imu
       lidar_ip: 172.168.1.10                          #Lidar ip
       port: 8010                                      #Lidar port
       udp_port: 8010                                  #Udp port, if < 0, use tcp
@@ -56,9 +54,9 @@ ROS driver supports dynamic parameter adjustment for up to 5 lidars, named as li
 rosrun rqt_reconfigure rqt_reconfigure
 ```
 
-ROS2 driver does not limit the number of lidars and uses a formatted naming convention: <lidar_name>_x, ...
+ROS2 driver does not limit the number of lidars and uses a formatted naming convention: <topic_prefix>_x, ...
 
-Therefore, if multiple lidars need to use this feature, ensure that the parameter lidar_name is unique.
+Therefore, if multiple lidars need to use this feature, ensure that the parameter topic_prefix is unique.
 
 ```bash
 ros2 run rqt_reconfigure rqt_reconfigure

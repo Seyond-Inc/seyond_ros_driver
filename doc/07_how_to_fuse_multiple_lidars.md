@@ -16,25 +16,21 @@ Sample Description: Connect two LiDARs and enable fusion_enable.
 common:
   log_level: info                                     #Log level: info, warn, error
   fusion_enable: true                                 #Multi-lidar fusion enable
-  fusion_topic: /iv_points_fusion                     #Multi-lidar fusion topic
+  fusion_topic: /seyond_lidar/fusion                  #Multi-lidar fusion topic
+  fusion_time_window: 50                              #Fusion time window, unit: ms
+  fusion_buffer_size: 10                              #Max buffer size per secondary lidar
 lidars:
   - lidar:
-      frame_topic: /iv_points                         #Frame topic
-
-      lidar_name: seyond                              #Lidar name
+      topic_prefix: /seyond_lidar                     #Topic prefix  ~/pointcloud, ~/packet, ~/imu
       lidar_ip: 172.168.1.10                          #Lidar ip
       port: 8010                                      #Lidar port
       udp_port: 8010                                  #Udp port, if < 0, use tcp
       
   - lidar:
-      frame_topic: /iv_points1                        #Frame topic
-
-      lidar_name: seyond1                             #Lidar name
+      topic_prefix: /seyond_lidar1                    #Topic prefix  ~/pointcloud, ~/packet, ~/imu
       lidar_ip: 172.168.1.11                          #Lidar ip
       port: 8011                                      #Lidar port
       udp_port: 8011                                  #Udp port, if < 0, use tcp
 
-      max_range: 2000.0                               #Max range
-      min_range: 0.4                                  #Min range
       coordinate_mode: 3                              #Coordinate mode, x/y/z, 0:up/right/forward 3:forward/left/up
 ```

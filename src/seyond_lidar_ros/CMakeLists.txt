@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.10)
 project(seyond)
 
 # Default to C99
@@ -28,10 +28,10 @@ endif()
 
 
 if($ENV{ROS_VERSION} MATCHES "2")
-  add_definitions(-DROS2_FOUND)
+  add_definitions(-DROS2_MAKE)
 
   if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-    add_compile_options(-Wno-format-extra-args -Wno-format -Wno-format-security)
+    add_compile_options(-Wno-format-extra-args -Wno-format)
   endif()
 
   # find dependencies
@@ -59,7 +59,13 @@ if($ENV{ROS_VERSION} MATCHES "2")
     src/driver/driver_lidar.cc
   )
 
-  rosidl_target_interfaces(seyond_node ${PROJECT_NAME} "rosidl_typesupport_cpp")
+  if(COMMAND rosidl_get_typesupport_target)
+    rosidl_get_typesupport_target(seyond_node_typesupport ${PROJECT_NAME} "rosidl_typesupport_cpp")
+    target_link_libraries(seyond_node "${seyond_node_typesupport}")
+  else()
+    # ROS 2 Foxy fallback
+    rosidl_target_interfaces(seyond_node ${PROJECT_NAME} "rosidl_typesupport_cpp")
+  endif()
 
   target_include_directories(seyond_node
     PRIVATE
@@ -68,6 +74,7 @@ if($ENV{ROS_VERSION} MATCHES "2")
     ${SEYOND_SDK_PATH}/apps
     ${SEYOND_SDK_PATH}/src
     ${PCL_INCLUDE_DIRS}
+    ${pcl_conversions_INCLUDE_DIRS}
   )
 
   target_link_directories(seyond_node
@@ -82,12 +89,12 @@ if($ENV{ROS_VERSION} MATCHES "2")
     ${YAML_CPP_LIBRARIES}
   )
 
-  ament_target_dependencies(seyond_node
-    rclcpp
-    PCL
-    std_msgs
-    sensor_msgs
-    pcl_conversions
+  target_link_libraries(seyond_node
+    ${rclcpp_TARGETS}
+    ${std_msgs_TARGETS}
+    ${sensor_msgs_TARGETS}
+    ${pcl_conversions_TARGETS}
+    ${PCL_LIBRARIES}
   )
 
   # seyond_test
@@ -95,13 +102,19 @@ if($ENV{ROS_VERSION} MATCHES "2")
     node/seyond_test.cc
   )
 
-  rosidl_target_interfaces(seyond_test ${PROJECT_NAME} "rosidl_typesupport_cpp")
+  if(COMMAND rosidl_get_typesupport_target)
+    rosidl_get_typesupport_target(seyond_test_typesupport ${PROJECT_NAME} "rosidl_typesupport_cpp")
+    target_link_libraries(seyond_test "${seyond_test_typesupport}")
+  else()
+    # ROS 2 Foxy fallback
+    rosidl_target_interfaces(seyond_test ${PROJECT_NAME} "rosidl_typesupport_cpp")
+  endif()
 
-  ament_target_dependencies(seyond_test
-    rclcpp
-    PCL
-    std_msgs
-    sensor_msgs
+  target_link_libraries(seyond_test
+    ${rclcpp_TARGETS}
+    ${std_msgs_TARGETS}
+    ${sensor_msgs_TARGETS}
+    ${PCL_LIBRARIES}
   )
 
   set_target_properties(seyond_node PROPERTIES
@@ -134,7 +147,7 @@ endif($ENV{ROS_VERSION} MATCHES "2")
 
 
 if($ENV{ROS_VERSION} MATCHES "1")
-  add_definitions(-DROS_FOUND)
+  add_definitions(-DROS_MAKE)
 
   set(${PROJECT_NAME}_CATKIN_DEPS
     roscpp

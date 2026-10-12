@@ -489,40 +489,36 @@ int32_t DriverLidar::lidar_data_callback(const InnoDataPacket *pkt) {
   if (param_.packet_mode) {
     uint64_t pkt_len = sizeof(InnoDataPacket) + pkt->item_number * pkt->item_size;
     packet_publish_cb_(reinterpret_cast<const int8_t *>(pkt), pkt_len, frame_start_ts_, is_next_frame);
-    if (is_next_frame) {
-      frame_start_ts_ = pkt->common.ts_start_us;
-    }
-  } else {
-    if (is_next_frame) {
-      transform_pointcloud();
-      bool is_empty = false;
-      pcl_pc_ptr->width = pcl_pc_ptr->points.size();
-      if (pcl_pc_ptr->width > reserve_size_) {
-        reserve_size_ = pcl_pc_ptr->width + 20000;
-      }
-      pcl_pc_ptr->height = 1;
-      {
-        std::unique_lock<std::mutex> lock(pcl_pc_mutex_);
-        is_empty = frame_data_queue_.empty();
-        if (frame_data_queue_.size() > 10) {
-          std::queue<FrameData> empty_queue;
-          std::swap(frame_data_queue_, empty_queue);
-          inno_log_warning("%s, publish queue is too long, drop old frames", param_.lidar_name.c_str());
-        }
-        FrameData frame_data;
-        frame_data.cloud_ptr = pcl_pc_ptr;
-        frame_data.timestamp = frame_start_ts_;
-        frame_data_queue_.push(frame_data);
-      }
-      if (is_empty) {
-        pcl_pc_cv_.notify_one();
-      }
-      frame_start_ts_ = pkt->common.ts_start_us;
-      pcl_pc_ptr = pcl::PointCloud<SeyondPoint>::Ptr(new pcl::PointCloud<SeyondPoint>());
-      pcl_pc_ptr->points.reserve(reserve_size_);
-    }
-    convert_and_parse(pkt);
   }
+  if (is_next_frame) {
+    transform_pointcloud();
+    bool is_empty = false;
+    pcl_pc_ptr->width = pcl_pc_ptr->points.size();
+    if (pcl_pc_ptr->width > reserve_size_) {
+      reserve_size_ = pcl_pc_ptr->width + 20000;
+    }
+    pcl_pc_ptr->height = 1;
+    {
+      std::unique_lock<std::mutex> lock(pcl_pc_mutex_);
+      is_empty = frame_data_queue_.empty();
+      if (frame_data_queue_.size() > 10) {
+        std::queue<FrameData> empty_queue;
+        std::swap(frame_data_queue_, empty_queue);
+        inno_log_warning("%s, publish queue is too long, drop old frames", param_.lidar_name.c_str());
+      }
+      FrameData frame_data;
+      frame_data.cloud_ptr = pcl_pc_ptr;
+      frame_data.timestamp = frame_start_ts_;
+      frame_data_queue_.push(frame_data);
+    }
+    if (is_empty) {
+      pcl_pc_cv_.notify_one();
+    }
+    frame_start_ts_ = pkt->common.ts_start_us;
+    pcl_pc_ptr = pcl::PointCloud<SeyondPoint>::Ptr(new pcl::PointCloud<SeyondPoint>());
+    pcl_pc_ptr->points.reserve(reserve_size_);
+  }
+  convert_and_parse(pkt);
   return 0;
 }
 
@@ -685,12 +681,6 @@ void DriverLidar::input_parameter_check() {
 
   if (param_.min_range > 550.0) {
     inno_log_error("%s, The minimum range is greater than the lidar effective distance", param_.lidar_name.c_str());
-  }
-
-  if (!(param_.packet_mode) && param_.replay_rosbag) {
-    inno_log_warning("%s, The replay_rosbag is only valid in packets mode, turn on packets mode",
-                     param_.lidar_name.c_str());
-    param_.packet_mode = true;
   }
 }
 

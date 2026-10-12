@@ -2,7 +2,7 @@
 
 ## 4.1 相关参数说明
 
-**packet_mode**: 启用packet_topic，将发布packet包
+**packet_mode**: 启用后在<topic_prefix>/packet发布packet包
 
 **aggregate_num**(可选)：启用packet_mode后，用于控制packet包发布频率
 
@@ -16,15 +16,15 @@
 ```bash
 // ros
 // 录制 packet包
-rosbag record /iv_packets
+rosbag record /seyond_lidar/packet
 // 录制 点云
-rosbag record /iv_points
+rosbag record /seyond_lidar/pointcloud
 
 // ros2
 // 录制 packet包
-ros2 bag record /iv_packets
+ros2 bag record /seyond_lidar/packet
 // 录制 点云
-ros2 bag record /iv_points
+ros2 bag record /seyond_lidar/pointcloud
 ```
 
 ## 4.3 回放

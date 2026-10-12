@@ -4,8 +4,7 @@
 
 | Parameter         | Default Value | description                        |
 | ----------------- | ------------- | ---------------------------------- |
-| frame_topic       | /iv_points    | frame topic to be tested           |
-| packet_topic      | /iv_packets   | packet topic to be tested          |
+| topic_prefix      | /seyond_lidar | topic prefix to be tested          |
 | hz                | false         | print frame hz(include points num) |
 | window            | 30            | hz window size                     |
 | stamp             | false         | print frame stamp                  |

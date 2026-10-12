@@ -28,9 +28,7 @@ common:
   log_level: info                                     #Log level: info, warn, error
 lidars:
   - lidar:
-      frame_topic: /iv_points                         #Frame topic
-
-      lidar_name: seyond                              #Lidar name
+      topic_prefix: /seyond_lidar                     #Topic prefix  ~/pointcloud, ~/packet, ~/imu
       lidar_ip: 172.168.1.10                          #Lidar ip
       port: 8010                                      #Lidar port
       udp_port: 8010                                  #Udp port, if < 0, use tcp
@@ -56,9 +54,9 @@ ros支持5台雷达的动态参数调整，命名为lidar1_x,…,lidar2_x,…
 rosrun rqt_reconfigure rqt_reconfigure
 ```
 
-ros2不限制数量，命名格式化为<lidar_name>_x,…
+ros2不限制数量，命名格式化为<topic_prefix>_x,…
 
-因此如果多台雷达需要使用该功能，需要确保参数lidar_name独立
+因此如果多台雷达需要使用该功能，需要确保参数topic_prefix独立
 
 ```bash
 ros2 run rqt_reconfigure rqt_reconfigure

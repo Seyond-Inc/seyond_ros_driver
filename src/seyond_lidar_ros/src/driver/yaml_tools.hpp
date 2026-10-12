@@ -67,7 +67,7 @@ class YamlTools {
 
     common_config.log_level = config_["common"]["log_level"].as<std::string>("info");
     common_config.fusion_enable = config_["common"]["fusion_enable"].as<bool>(false);
-    common_config.fusion_topic = config_["common"]["fusion_topic"].as<std::string>("/iv_points_fusion");
+    common_config.fusion_topic = config_["common"]["fusion_topic"].as<std::string>("/seyond_lidar/fusion");
     common_config.fusion_time_window = config_["common"]["fusion_time_window"].as<int32_t>(50);
     common_config.fusion_buffer_size = config_["common"]["fusion_buffer_size"].as<int32_t>(10);
 
@@ -79,10 +79,9 @@ class YamlTools {
         tmp_config.aggregate_num = lidar_config["lidar"]["aggregate_num"].as<uint32_t>(20);
 
         tmp_config.frame_id = lidar_config["lidar"]["frame_id"].as<std::string>("seyond");
-        tmp_config.packet_topic = lidar_config["lidar"]["packet_topic"].as<std::string>("/iv_packets");
-        tmp_config.frame_topic = lidar_config["lidar"]["frame_topic"].as<std::string>("/iv_points");
+        tmp_config.topic_prefix = lidar_config["lidar"]["topic_prefix"].as<std::string>("/seyond_lidar");
 
-        tmp_config.lidar_name = lidar_config["lidar"]["lidar_name"].as<std::string>("seyond");
+        tmp_config.lidar_name = tmp_config.topic_prefix;
         tmp_config.lidar_ip = lidar_config["lidar"]["lidar_ip"].as<std::string>("172.168.1.10");
         tmp_config.port = lidar_config["lidar"]["port"].as<int32_t>(8010);
         tmp_config.udp_port = lidar_config["lidar"]["udp_port"].as<int32_t>(8010);
@@ -127,9 +126,7 @@ class YamlTools {
       "\tpacket_mode: %d\n"
       "\taggregate_num: %d\n"
       "\tframe_id: %s\n"
-      "\tpacket_topic: %s\n"
-      "\tframe_topic: %s\n"
-      "\tlidar_name: %s\n"
+      "\ttopic: %s\n"
       "\tlidar_ip: %s\n"
       "\tport: %d\n"
       "\tudp_port: %d\n"
@@ -155,8 +152,8 @@ class YamlTools {
       "\troll: %f\n"
       "\ttransform_matrix: %s\n\n",
       lidar_config.replay_rosbag, lidar_config.packet_mode, lidar_config.aggregate_num,
-      lidar_config.frame_id.c_str(), lidar_config.packet_topic.c_str(), lidar_config.frame_topic.c_str(),
-      lidar_config.lidar_name.c_str(), lidar_config.lidar_ip.c_str(), lidar_config.port, lidar_config.udp_port,
+      lidar_config.frame_id.c_str(), lidar_config.topic_prefix.c_str(),
+      lidar_config.lidar_ip.c_str(), lidar_config.port, lidar_config.udp_port,
       lidar_config.reflectance_mode, lidar_config.multiple_return,
       lidar_config.enable_falcon_ring, lidar_config.enable_imu_msg,
       lidar_config.continue_live,

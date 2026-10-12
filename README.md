@@ -70,9 +70,7 @@ please refer to [config.yaml](/src/seyond_lidar_ros/config/config.yaml), support
 | packet_mode | false | packet mode enable |
 | aggregate_num | 20  | aggregate packets num |
 | frame_id | seyond | - |
-| frame_topic | iv_points | - |
-| packet_topic | iv_packets | - |
-| lidar_name | seyond | lidar name |
+| topic_prefix | /seyond_lidar | topic prefix, topics are <topic_prefix>/pointcloud, <topic_prefix>/packet, <topic_prefix>/imu |
 | lidar_ip | 172.168.1.10 | - |
 | port | 8010 | tcp port |
 | udp_port | 8010 | udp port |

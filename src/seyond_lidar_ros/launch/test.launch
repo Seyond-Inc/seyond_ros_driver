@@ -2,10 +2,8 @@
 
 <launch>
   <!-- declare arguments with default values -->
-  <!-- the topic name of the frame -->
-  <arg name="frame_topic" default="/iv_points" />
-  <!-- the topic name of the packets -->
-  <arg name="packet_topic" default="/iv_packets" />
+  <!-- the topic_prefix of the lidar -->
+  <arg name="topic_prefix" default="/seyond_lidar" />
   <!-- print stamp flag -->
   <arg name="stamp" default="false" />
   <!-- print hz flag -->
@@ -18,8 +16,7 @@
   <arg name="packet_loss_rate" default="false" />
 
   <node pkg="seyond" name="test" type="seyond_test" output="screen">
-    <param name="frame_topic" value="$(arg frame_topic)"/>
-    <param name="packet_topic" value="$(arg packet_topic)"/>
+    <param name="topic_prefix" value="$(arg topic_prefix)"/>
     <param name="stamp" value="$(arg stamp)"/>
     <param name="hz" value="$(arg hz)"/>
     <param name="window" value="$(arg window)"/>

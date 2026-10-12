@@ -4,6 +4,7 @@ from launch.actions import DeclareLaunchArgument
 from launch.substitutions import LaunchConfiguration
 from launch.actions import SetEnvironmentVariable
 
+# from ament_index_python.packages import get_package_share_directory
 import os
 
 
@@ -14,14 +15,9 @@ def generate_launch_description():
             SetEnvironmentVariable(name='RCUTILS_COLORIZED_OUTPUT', value='1'),
 
             DeclareLaunchArgument(
-                'frame_topic',
-                default_value='iv_points',
-                description='output topic name'
-            ),
-            DeclareLaunchArgument(
-                'packet_topic',
-                default_value='iv_packets',
-                description='output topic name'
+                'topic_prefix',
+                default_value='seyond_lidar',
+                description='output topic_prefix'
             ),
             DeclareLaunchArgument(
                 'stamp',
@@ -53,8 +49,7 @@ def generate_launch_description():
                 package="seyond",
                 executable="seyond_test",
                 parameters=[
-                    {'frame_topic': LaunchConfiguration('frame_topic')},
-                    {'packet_topic': LaunchConfiguration('packet_topic')},
+                    {'topic_prefix': LaunchConfiguration('topic_prefix')},
                     {'stamp': LaunchConfiguration('stamp')},
                     {'hz': LaunchConfiguration('hz')},
                     {'window': LaunchConfiguration('window')},

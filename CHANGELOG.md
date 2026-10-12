@@ -53,7 +53,7 @@
 - Fixed documentation errors.
 
 
-## [v1.0.4pre] (2026-06-19)
+## [v1.0.4] (2026-06-19)
 
 ### Added
 - Support inno_pc file replay.
@@ -74,3 +74,22 @@
 - Fixed ret double assignment in lidar_live_process.
 - Fixed YAML loader not returning error on exceptions.
 - Added pcap file path and lidar_ip length validation.
+
+
+## [v1.0.5] (2026-10-12)
+
+### Changed
+- Replaced the `frame_topic`, `packet_topic` and `lidar_name` parameters with a single `topic_prefix`;
+  topics are now derived as `<topic_prefix>/pointcloud`, `<topic_prefix>/packet` and `<topic_prefix>/imu`.
+- Changed the default `fusion_topic` from `/iv_points_fusion` to `/seyond_lidar/fusion`.
+- Decoupled `packet_mode` and `replay_rosbag`: the packet publisher is created when `packet_mode` is enabled
+  and the packet subscriber when `replay_rosbag` is enabled; `replay_rosbag` no longer forces `packet_mode`.
+- Point cloud is now always parsed and published, even when `packet_mode` is enabled.
+- Updated the required CMake version to 3.10, replaced `ament_target_dependencies`/`rosidl_target_interfaces`
+  with `target_link_libraries`/`rosidl_get_typesupport_target`, and renamed the `ROS_FOUND`/`ROS2_FOUND`
+  macros to `ROS_MAKE`/`ROS2_MAKE`.
+- Updated RViz configs, launch files and documentation to the new topic naming.
+
+### Fixed
+- Fixed missing `inline` on `ROSDemo` methods that caused multiple-definition link errors in the test node.
+- Added the `pcl_conversions` include directory for the ROS2 build.
