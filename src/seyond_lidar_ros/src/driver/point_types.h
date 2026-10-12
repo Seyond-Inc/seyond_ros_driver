@@ -34,7 +34,7 @@ namespace seyond {
 
 struct EIGEN_ALIGN16 PointXYZIT {
   PCL_ADD_POINT4D;
-  double timestamp;
+  std::uint32_t timestamp;
   float intensity;
   std::uint8_t flags;
   std::uint8_t elongation;
@@ -48,7 +48,7 @@ struct EIGEN_ALIGN16 PointXYZIT {
 POINT_CLOUD_REGISTER_POINT_STRUCT(
     seyond::PointXYZIT,
     (float, x, x)(float, y, y)(float, z, z)
-    (double, timestamp, timestamp)
+    (std::uint32_t, timestamp, timestamp)
     (float, intensity, intensity)
     (std::uint8_t, flags, flags)
     (std::uint8_t, elongation, elongation)
