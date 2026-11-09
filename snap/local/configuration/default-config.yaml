@@ -1,0 +1,44 @@
+common:
+  log_level: info                                     #Log level: info, warn, error
+  fusion_enable: false                                #Multi-lidar fusion enable
+  fusion_topic: /seyond_lidar/fusion                  #Multi-lidar fusion topic
+  fusion_time_window: 50                              #Fusion time window, unit: ms
+  fusion_buffer_size: 10                              #Max buffer size per secondary lidar
+lidars:
+  - lidar:
+      replay_rosbag: false                            #Replay rosbag
+      packet_mode: false                              #Packet mode (true: packets + pointcloud, false: direct pointcloud)
+      aggregate_num: 20                               #Aggregate number
+
+      frame_id: seyond                                #Frame id
+      topic_prefix: /seyond_lidar                     #Topic prefix  ~/pointcloud, ~/packet, ~/imu
+
+      lidar_ip: 172.168.1.10                          #Lidar ip
+      port: 8010                                      #Lidar port
+      udp_port: 8010                                  #Udp port, if < 0, use tcp
+      reflectance_mode: true                          #Reflectance mode
+      multiple_return: 1                              #Multiple return
+      enable_falcon_ring: false                       #Enable falcon ring_id calculation
+      enable_imu_msg: false                           #Enable imu message
+
+      continue_live: false                            #Continue live
+
+      inno_pc_file: ''                                #Inno pc file
+      pcap_file: ''                                   #Pcap file
+      hv_table_file: ''                               #HV table file, for generic lidar's pcap file
+      packet_rate: 10000                              #Packet rate
+      file_rewind: 0                                  #File rewind
+
+      max_range: 2000.0                               #Max range, unit: m
+      min_range: 0.1                                  #Min range, unit: m
+      coordinate_mode: 3                              #Coordinate mode, x/y/z, 0:up/right/forward 3:forward/left/up
+
+      transform_enable: false                         #Transform enable
+      x: 0.0                                          #X     unit: m
+      y: 0.0                                          #Y     unit: m
+      z: 0.0                                          #Z     unit: m
+      pitch: 0.0                                      #Pitch unit: rad (-2pi, 2pi)
+      yaw: 0.0                                        #Yaw   unit: rad (-2pi, 2pi)
+      roll: 0.0                                       #Roll  unit: rad (-2pi, 2pi)
+
+      transform_matrix: ''                            #Transformation matrix string

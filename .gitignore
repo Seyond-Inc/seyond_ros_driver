@@ -51,3 +51,7 @@ src/CMakeLists.txt
 .catkin_workspace
 *.deb
 *.ddeb
+
+# snapcraft
+*.snap
+

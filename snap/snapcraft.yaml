@@ -1,0 +1,139 @@
+name: ros2-seyond-lidar
+title: ROS 2 Seyond LiDAR
+base: core24
+adopt-info: seyond
+license: BSD-2-Clause
+website: https://github.com/Seyond-Inc/seyond_ros_driver
+source-code: https://github.com/Seyond-Inc/seyond_ros_driver
+issues: https://github.com/Seyond-Inc/seyond_ros_driver/issues
+contact: https://github.com/Seyond-Inc/seyond_ros_driver/issues
+summary: ROS 2 driver for Seyond LiDARs (Falcon, Robin, Hummingbird)
+description: |
+  Snap of the Seyond LiDAR ROS 2 driver (`seyond_node`), built on top of the
+  Seyond inno-lidar-sdk. The snap runs the driver as a daemon and bundles
+  the ROS 2 Jazzy runtime it needs.
+
+  Supported LiDARs: Falcon-K1, Falcon-K2, Robin-W, Robin-ELITE (Robin-E1X),
+  Hummingbird-D1. The LiDAR is reached over the network (TCP/UDP).
+
+  The driver is configured through its own multi-lidar YAML file. A managed
+  default is seeded at $SNAP_COMMON/config/seyond.yaml on install (factory
+  LiDAR IP 172.168.1.10, port 8010). Edit it directly and restart:
+
+      sudo vim /var/snap/ros2-seyond-lidar/common/config/seyond.yaml
+      sudo snap restart ros2-seyond-lidar
+
+  Or hand the snap a completely separate file (under $SNAP_COMMON) or URL,
+  which takes precedence over the managed default:
+
+      snap set ros2-seyond-lidar config-file=https://example.com/seyond.yaml
+
+  To discard local edits and restore the packaged default config:
+
+      sudo ros2-seyond-lidar.reset-config
+      sudo snap restart ros2-seyond-lidar
+
+  Replay files referenced from the config (pcap_file, inno_pc_file,
+  hv_table_file) must live under /var/snap/ros2-seyond-lidar/common/.
+
+  General ROS environment (ROS_DOMAIN_ID, RMW_IMPLEMENTATION, ...) is set via
+  the env-injector extension, e.g.:
+
+      snap set ros2-seyond-lidar env.ros-domain-id=42
+
+  Topics: <topic_prefix>/pointcloud (sensor_msgs/PointCloud2),
+  <topic_prefix>/packet (seyond/SeyondScan, if packet_mode),
+  <topic_prefix>/imu (sensor_msgs/Imu, if enable_imu_msg), and the fusion
+  topic when fusion_enable is set.
+
+  Requires an x86-64 CPU with SSE4.2.
+
+grade: stable
+confinement: strict
+
+# arm64 needs the SDK built with CC=aarch64-linux-gnu-gcc (so build_unix.sh
+# picks ARCH_TAG=-arm) and without the x86-only -mcrc32/-mno-ms-bitfields flags.
+platforms:
+  amd64:
+
+apps:
+  seyond:
+    extensions: [ros2-jazzy, env-injector]
+    command: usr/bin/seyond-launch.sh
+    daemon: simple
+    restart-condition: on-failure
+    restart-delay: 5s
+    plugs:
+      - network
+      - network-bind
+
+  seyond-test:
+    extensions: [ros2-jazzy, env-injector]
+    command: usr/bin/seyond-test-launch.sh
+    plugs:
+      - network
+      - network-bind
+
+  reset-config:
+    command: usr/bin/reset-config.sh
+
+parts:
+  seyond:
+    plugin: colcon
+    source: .
+    colcon-packages: [seyond]
+    colcon-cmake-args:
+      - -DBUILD_TESTING=OFF
+    build-packages:
+      - git
+    stage-packages:
+      - libyaml-cpp0.8
+      # The only PCL lib seyond_node links (see pcl_conversions note below).
+      - libpcl-common1.14
+      # OpenMP runtime needed by libpcl_common.
+      - libgomp1
+    override-pull: |
+      craftctl default
+
+      # pcl_conversions is header-only, but as a <depend> rosdep stages its
+      # runtime deps: all of libpcl-dev (VTK, Qt, Java, ...). Make it
+      # build-only in the pulled copy; libpcl-common1.14 is staged above.
+      sed -i 's|<depend>pcl_conversions</depend>|<build_depend>pcl_conversions</build_depend>|' \
+        src/seyond_lidar_ros/package.xml
+      grep -q '<build_depend>pcl_conversions</build_depend>' src/seyond_lidar_ros/package.xml
+
+      # Fetch the Seyond SDK (git submodule upstream). The tag MUST match the
+      # commit pinned by the superproject's gitlink (asserted below).
+      SDK_TAG="3.103.10"
+      SDK_DIR="src/seyond_lidar_ros/src/seyond_sdk"
+      rm -rf "$SDK_DIR"
+      git clone --depth 1 --branch "$SDK_TAG" \
+        https://github.com/Seyond-Inc/inno-lidar-sdk.git "$SDK_DIR"
+      test "$(git -C "$SDK_DIR" rev-parse HEAD)" = c199dc77355db57d9a1bab3bce4ecd9a0d5ccf7d
+
+      # Version from package.xml (git tags lag behind releases upstream).
+      version="$(sed -n 's|.*<version>\(.*\)</version>.*|\1|p' src/seyond_lidar_ros/package.xml | head -n1)"
+      craftctl set version="${version}+sdk${SDK_TAG}"
+    override-build: |
+      # The colcon plugin builds out-of-tree against $CRAFT_PART_SRC_WORK, and
+      # the package's CMakeLists.txt expects the SDK libs in-tree at
+      # src/seyond_sdk/lib, so build the SDK inside the source tree.
+      SDK_DIR="$CRAFT_PART_SRC_WORK/src/seyond_lidar_ros/src/seyond_sdk"
+
+      # Build the SDK static libs (mirrors upstream build.bash).
+      rm -rf "$SDK_DIR/lib" "$SDK_DIR/build_unix"
+      (cd "$SDK_DIR/build" && ./build_unix.sh)
+      test -f "$SDK_DIR/lib/libinnolidarsdkclient.a"
+
+      craftctl default
+
+  scripts:
+    plugin: dump
+    source: snap/local/
+    source-type: local
+    # curl is needed at runtime by seyond-launch.sh to download the optional
+    # URL-based `config-file`.
+    stage-packages: [curl, ca-certificates]
+    organize:
+      '*.sh': usr/bin/
+      'configuration/*': etc/configuration/

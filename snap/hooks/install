@@ -1,0 +1,12 @@
+#!/bin/sh
+
+# Seeds the managed default driver config under $SNAP_COMMON so the LiDAR has
+# sane defaults to edit.
+
+set -e
+
+mkdir -p "$SNAP_COMMON/config"
+
+if [ ! -f "$SNAP_COMMON/config/seyond.yaml" ]; then
+  cp "$SNAP/etc/configuration/default-config.yaml" "$SNAP_COMMON/config/seyond.yaml"
+fi
