@@ -1,0 +1,45 @@
+#!/bin/sh
+
+# Applies `snap set ros2-seyond-lidar <key>=<value>` configuration.
+# The driver is always configured through its own multi-lidar YAML file;
+# this hook only handles:
+#   - config-file: a full override (path under $SNAP_COMMON or http(s) URL)
+#     taking precedence over the managed default at
+#     $SNAP_COMMON/config/seyond.yaml (seeded by snap/hooks/install).
+# ROS environment (ROS_DOMAIN_ID, RMW_IMPLEMENTATION, ...) is handled by the
+# env-injector extension via `snap set <snap> env.<key>=<value>`.
+set -e
+
+# A config-file override must be either an http(s) URL or a readable path
+# under $SNAP_COMMON (so the strictly-confined snap can read it).
+validate_config_file() {
+  cf="$1"
+  case "$cf" in
+    http://*|https://*)
+      return 0 ;;
+    "$SNAP_COMMON"/*)
+      real="$(realpath -e "$cf" 2>/dev/null || true)"
+      case "$real" in
+        "$SNAP_COMMON"/*) [ -f "$real" ] && [ -r "$real" ] && return 0 ;;
+      esac
+      echo "seyond: config-file must be a readable regular file under $SNAP_COMMON: $cf" >&2
+      snapctl set-health blocked "config-file must be a readable regular file under $SNAP_COMMON: $cf"
+      exit 1 ;;
+    *)
+      echo "seyond: invalid config-file: '$cf' (must be a URL or a path under \$SNAP_COMMON, i.e. $SNAP_COMMON/...)" >&2
+      snapctl set-health blocked "invalid config-file: '$cf' (must be a URL or a path under $SNAP_COMMON)"
+      exit 1 ;;
+  esac
+}
+
+CONFIG_FILE="$(snapctl get config-file)"
+
+if [ -n "$CONFIG_FILE" ]; then
+  validate_config_file "$CONFIG_FILE"
+fi
+
+snapctl set-health okay
+# Apply changes only to a running daemon; never start or re-enable it here.
+if snapctl services "$SNAP_NAME.seyond" | awk 'NR==2 {exit $3 != "active"}'; then
+  snapctl restart "$SNAP_NAME.seyond"
+fi
