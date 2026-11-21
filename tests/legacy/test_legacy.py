@@ -59,6 +59,23 @@ def test_entrypoint_is_the_released_one_plus_the_opt_in_block_only():
     ]
 
 
+UNIFIED_REFERENCE = HERE / "entrypoint-unified-v1.0.8-packets.sh"
+UNIFIED_BLOB = "f7bd369a065400106d256ed4270e733ea846ed24"  # git rev-parse v1.0.8-packets:entrypoint-unified.sh
+
+
+def test_unified_entrypoint_is_the_released_one_plus_the_same_block():
+    """The -unified image has no contract: the block only refuses the switch there."""
+    assert git_blob_id(UNIFIED_REFERENCE.read_bytes()) == UNIFIED_BLOB
+    current = (REPO / "entrypoint-unified.sh").read_text()
+    reference = UNIFIED_REFERENCE.read_text()
+    if current == reference:
+        return
+    head, sep, tail = current.partition(BLOCK_END)
+    assert sep and tail == reference[len(SHEBANG):]
+    main_head = CURRENT.read_text().partition(BLOCK_END)[0]
+    assert head == main_head, "the two entrypoints' contract blocks differ"
+
+
 def test_there_are_fleet_cases():
     assert len(CASES) >= 9
 

@@ -1,0 +1,8 @@
+exit 1
+--- stdout
+--- stderr
+seyond-driver: refusing to start: CONTINUE_LIVE is not a variable this image knows; accepted: LIDAR_MODEL, SENSOR_IP, SENSOR_ID, DATA_PORT, DEVICE_PORT, HOST_IP, FRAME_ID, POINTCLOUD_TOPIC, TIME_MODE, PUBLISH_SCAN, SEYOND_RUN_DIR, DUAL_LIDAR
+seyond-driver: refusing to start: FRAME_TOPIC is not a variable this image knows (did you mean POINTCLOUD_TOPIC?); accepted: LIDAR_MODEL, SENSOR_IP, SENSOR_ID, DATA_PORT, DEVICE_PORT, HOST_IP, FRAME_ID, POINTCLOUD_TOPIC, TIME_MODE, PUBLISH_SCAN, SEYOND_RUN_DIR, DUAL_LIDAR
+seyond-driver: refusing to start: LIDAR_IPS is not a variable this image knows (did you mean SENSOR_IP?); accepted: LIDAR_MODEL, SENSOR_IP, SENSOR_ID, DATA_PORT, DEVICE_PORT, HOST_IP, FRAME_ID, POINTCLOUD_TOPIC, TIME_MODE, PUBLISH_SCAN, SEYOND_RUN_DIR, DUAL_LIDAR
+seyond-driver: refusing to start: SEYOND_RUNDIR is not a variable this image knows (did you mean SEYOND_RUN_DIR?); accepted: LIDAR_MODEL, SENSOR_IP, SENSOR_ID, DATA_PORT, DEVICE_PORT, HOST_IP, FRAME_ID, POINTCLOUD_TOPIC, TIME_MODE, PUBLISH_SCAN, SEYOND_RUN_DIR, DUAL_LIDAR
+seyond-driver: refusing to start: UDP_PORT is not a variable this image knows (did you mean DATA_PORT?); accepted: LIDAR_MODEL, SENSOR_IP, SENSOR_ID, DATA_PORT, DEVICE_PORT, HOST_IP, FRAME_ID, POINTCLOUD_TOPIC, TIME_MODE, PUBLISH_SCAN, SEYOND_RUN_DIR, DUAL_LIDAR

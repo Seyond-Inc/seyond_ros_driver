@@ -1,0 +1,4 @@
+exit 1
+--- stdout
+--- stderr
+seyond-driver: refusing to start: HOST_IP='172.168.2.100/24': the sensor at 172.168.1.10 is not in the host's subnet 172.168.2.0/24; accepted: a host address in the sensor's subnet

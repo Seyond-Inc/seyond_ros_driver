@@ -1,0 +1,5 @@
+exit 1
+--- stdout
+--- stderr
+seyond-driver: refusing to start: LIDAR_MODEL is not set; accepted (any case, optional 'seyond-' prefix, '-' and '_' ignored): robin-w, robin-elite (robin-e1x), robin-e2, falcon-k1, falcon-k2, falcon-k24
+seyond-driver: refusing to start: SENSOR_IP is not set; accepted: the sensor's own IPv4 address, for example 172.168.1.10 (the driver connects to it)

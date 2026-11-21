@@ -1,0 +1,46 @@
+exit 0
+--- stdout
+# Rendered from the environment by the seyond-driver image (METROLLA_DRIVER_CONTRACT=1); do not edit.
+# LIDAR_MODEL Robin-W: the SDK identifies the sensor from its packets.
+# TIME_MODE ptp: clouds carry the sensor's own time (the driver has no host-time option); the sensor must be synchronised that way, this image does not program it.
+common:
+  log_level: "info"
+  fusion_enable: false
+  fusion_topic: "/iv_points_fusion"
+  fusion_time_window: 50
+  fusion_buffer_size: 10
+lidars:
+  - lidar:
+      replay_rosbag: false
+      packet_mode: false
+      aggregate_num: 20
+      frame_id: "seyond"
+      packet_topic: "iv_packets"
+      frame_topic: "/iv_points"
+      lidar_name: "east"
+      lidar_ip: "172.168.1.10"
+      port: 8010
+      udp_port: 8010
+      reflectance_mode: true
+      multiple_return: 1
+      enable_falcon_ring: false
+      enable_imu_msg: false
+      continue_live: true
+      inno_pc_file: ""
+      pcap_file: ""
+      hv_table_file: ""
+      packet_rate: 10000
+      file_rewind: 0
+      max_range: 2000.0
+      min_range: 0.1
+      coordinate_mode: 3
+      transform_enable: false
+      x: 0.0
+      y: 0.0
+      z: 0.0
+      pitch: 0.0
+      yaw: 0.0
+      roll: 0.0
+      transform_matrix: ""
+# exec: /opt/metrolla/seyond/install/seyond/lib/seyond/seyond_node --ros-args -r __ns:=/east -p config_path:=/tmp/seyond/config.yaml
+--- stderr
