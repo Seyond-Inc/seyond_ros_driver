@@ -1,12 +1,18 @@
 """Bug 4: continue_live must be true or the driver becomes a zombie.
 
-With ``continue_live: false`` the driver makes exactly one connection
-attempt and never retries: BOTH recovery paths in driver_lidar.cc are gated
-on continue_live -
-  * the start-retry loop:   ``while (start_val != 0 && param_.continue_live && is_running_)``
-  * the fatal-error reconnect: ``if (fatal_error_ && param_.continue_live)``
-so a lidar that is unreachable at boot (or drops mid-run) leaves a running
-but permanently deaf node.  v1.0.7-dual ships continue_live: true.
+With ``continue_live: false`` the driver makes exactly one connection attempt and never retries:
+the start-retry loop in driver_lidar.cc is gated on it,
+  ``while (start_val != 0 && param_.continue_live && is_running_)``
+so a lidar that is unreachable at boot leaves a running but permanently deaf node. v1.0.7-dual
+ships continue_live: true.
+
+Mid-run recovery changed with the vendor sync of 2026-08-31 (upstream 18c5c93 "sync up with
+internal version", merged in 592eca1): driver_lidar.cc no longer has the fatal-error reconnect
+``if (fatal_error_ && param_.continue_live) { stop_lidar(); start_lidar(); }``. The old test that
+pinned it failed on main from that merge on; the test was wrong, not the code. What recovers a
+live driver now, for UDP data (udp_port >= 0: every shipped config and the opt-in contract), is the
+SDK's UDP read loop: it never returns on silence and logs "recover from network timeout" when
+packets come back. TCP data (udp_port < 0) has no mid-run reconnect any more, so it must not ship.
 """
 
 import re
@@ -14,7 +20,7 @@ import re
 import pytest
 import yaml
 
-from conftest import CONFIG_YAML, TWO_CONFIG_YAML, FIX_REASON
+from conftest import CONFIG_YAML, DRIVER_LIDAR_CC, TWO_CONFIG_YAML, FIX_REASON  # noqa: F401
 
 
 def _continue_live_values(path):
@@ -63,11 +69,41 @@ def test_start_retry_loop_gated_on_continue_live(driver_src):
     )
 
 
-def test_fatal_error_reconnect_gated_on_continue_live(driver_src):
-    """The mid-run fatal-error reconnect is also gated on continue_live."""
-    assert re.search(
-        r"if\s*\(\s*fatal_error_\s*&&\s*param_\.continue_live\s*\)", driver_src
-    ), (
-        "expected the fatal-error reconnect gate "
-        "`if (fatal_error_ && param_.continue_live)` in driver_lidar.cc"
+SDK_READ = DRIVER_LIDAR_CC.parents[1] / "seyond_sdk" / "src" / "sdk_client" / "stage_client_read.cpp"
+
+
+def _sdk_read_src():
+    if not SDK_READ.is_file():
+        pytest.fail("the seyond_sdk submodule is not checked out (git submodule update --init): "
+                    "the SDK half of this check cannot run, which is an ABORT, not a pass")
+    return SDK_READ.read_text(encoding="utf-8")
+
+
+def test_fatal_error_reconnect_is_gone_and_udp_recovers_in_the_sdk(driver_src):
+    """Past bug of this suite (failed on main since 2026-08-31): it pinned the vendor's removed
+    fatal-error reconnect. If the vendor brings a reconnect back, this fails on purpose: re-read
+    driver_lidar.cc and pin the new mechanism."""
+    assert "fatal_error_" not in driver_src, (
+        "driver_lidar.cc has a fatal_error_ path again: pin it (gated on continue_live?)"
     )
+    # udp_port >= 0 selects UDP data (the SDK listens); < 0 TCP data.
+    assert re.search(
+        r"if\s*\(\s*param_\.udp_port\s*>=\s*0\s*\)\s*\{\s*protocol_\s*=\s*INNO_LIDAR_PROTOCOL_PCS_UDP;",
+        driver_src,
+    )
+    sdk = _sdk_read_src()
+    loop = sdk[sdk.index("int UdpInput::read_udp_("):sdk.index("int UdpInput::read_data()")]
+    # A receive timeout (EAGAIN) continues the loop instead of ending the read stage ...
+    assert re.search(r"if \(errno == EAGAIN \|\| errno == EWOULDBLOCK\) \{.*?continue;", loop, re.S)
+    # ... and the next packet is taken as a recovery.
+    assert 'inno_log_info("recover from network timeout");' in loop
+
+
+@pytest.mark.parametrize("path", [CONFIG_YAML, TWO_CONFIG_YAML], ids=["config.yaml", "two-config.yaml"])
+def test_shipped_configs_use_udp_data(path):
+    """TCP data (udp_port < 0) has no mid-run reconnect since the vendor sync: never ship it."""
+    if not path.is_file():
+        pytest.skip(f"{path.name} absent on this branch")
+    data = yaml.safe_load(path.read_text(encoding="utf-8"))
+    ports = [entry["lidar"]["udp_port"] for entry in data["lidars"]]
+    assert ports and all(isinstance(p, int) and p >= 0 for p in ports), ports

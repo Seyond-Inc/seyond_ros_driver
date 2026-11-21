@@ -10,6 +10,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive  # tests/test_continue_live.py reads the SDK's UDP read loop
 
       - uses: actions/setup-python@v5
         with:
