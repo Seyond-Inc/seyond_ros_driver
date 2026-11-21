@@ -1,0 +1,37 @@
+{
+  "schema": 1,
+  "recorded": "2026-11-21",
+  "vendors": [
+    {
+      "id": "seyond_ros_driver",
+      "url": "https://github.com/Seyond-Inc/seyond_ros_driver.git",
+      "branch": "main",
+      "tags": [
+        "v*"
+      ],
+      "fork_ref": "main",
+      "base": {
+        "commit": "18c5c9362d41cd0766ee1b430f4b431bb14b1ccf",
+        "how": "merge-base of fork main (= fleet tag v1.0.8-packets) and vendor main on 2026-11-21"
+      }
+    },
+    {
+      "id": "inno-lidar-sdk",
+      "url": "https://github.com/Seyond-Inc/inno-lidar-sdk.git",
+      "branch": "main",
+      "tags": [
+        "*"
+      ],
+      "base": {
+        "submodule": "src/seyond_lidar_ros/src/seyond_sdk",
+        "how": "the submodule commit in the checked-out fork branch (73a24e9 on main on 2026-11-21)"
+      }
+    }
+  ],
+  "not_checked": [
+    {
+      "name": "seyond-ros2-jazzy-3.103.10-rv3.6.7-x86.deb",
+      "reason": "binary package from Seyond checked into the repo; no public source to compare"
+    }
+  ]
+}
