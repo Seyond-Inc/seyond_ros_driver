@@ -1,0 +1,4 @@
+exit 1
+--- stdout
+--- stderr
+seyond-driver: refusing to start: LIDAR_MODEL='hb-d1' is a Hummingbird, which this image's driver does not run; use the -hb image (legacy mode only)

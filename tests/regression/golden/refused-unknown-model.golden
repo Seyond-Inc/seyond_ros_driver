@@ -1,0 +1,4 @@
+exit 1
+--- stdout
+--- stderr
+seyond-driver: refusing to start: LIDAR_MODEL='robin-w2' is not a Seyond model this image runs; accepted (any case, optional 'seyond-' prefix, '-' and '_' ignored): robin-w, robin-elite (robin-e1x), robin-e2, falcon-k1, falcon-k2, falcon-k24

@@ -1,38 +1,142 @@
 name: regression-gate
 
+# Three tiers, separately named (TESTS.md): unit, regression, smoke; plus manifest-lint.
+# Nothing here pushes an image or uses a repository secret. The smoke job may log in to ghcr.io
+# with this run's own read-only GITHUB_TOKEN, only to pull the released v1.0.8-packets image for
+# the legacy comparison; when that is not allowed it says so and compares with the goldens only.
+
 on:
   push:
   pull_request:
 
+permissions:
+  contents: read
+
+concurrency:
+  group: regression-gate-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   unit:
     name: unit (launch/config contract tests)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          submodules: recursive  # tests/test_continue_live.py and the synthetic sensor read the SDK
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
         with:
           python-version: "3.12"
 
       - name: Install test dependencies
-        run: python -m pip install --upgrade pip pytest pyyaml
+        run: python -m pip install pytest==9.0.1 pyyaml==6.0.3 shellcheck-py==0.11.0.1
 
-      - name: Run regression-gate tests
-        run: python -m pytest tests/ -v -ra
+      - name: Launch/config contract, environment contract, legacy entrypoint, synthetic sensor
+        run: python -m pytest tests --ignore=tests/regression -v -ra
+
+      - name: shellcheck (new scripts; the entrypoints' legacy parts stay byte-identical to the release)
+        run: shellcheck docker/contract-entrypoint.sh docker/smoke/smoke.sh
+
+      - name: hadolint
+        # DL3008/DL3015 are in the Dockerfile's legacy lines, kept so the legacy image builds the same.
+        run: |
+          curl -fsSL -o "$RUNNER_TEMP/hadolint" \
+            https://github.com/hadolint/hadolint/releases/download/v2.12.0/hadolint-Linux-x86_64
+          echo "56de6d5e5ec427e17b74fa48d51271c7fc0d61244bf5c90e828aab8362d55010  $RUNNER_TEMP/hadolint" | sha256sum -c -
+          chmod +x "$RUNNER_TEMP/hadolint"
+          "$RUNNER_TEMP/hadolint" --ignore DL3008 --ignore DL3015 Dockerfile
+
+  regression:
+    name: regression
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: "3.12"
+
+      - name: Install test dependencies
+        run: python -m pip install pytest==9.0.1 pyyaml==6.0.3
+
+      - name: Goldens (legacy fleet environments, contract renders, refusals) and past bugs
+        run: python -m pytest tests/regression tests/legacy -v -ra
+
+  smoke:
+    name: smoke
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    permissions:
+      contents: read
+      packages: read
+    steps:
+      - name: Free disk space
+        uses: jlumbroso/free-disk-space@54081f138730dfa15788a46383842cd2f914a1be # v1.3.1
+        with:
+          tool-cache: true
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: true
+          docker-images: false
+          swap-storage: true
+
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          submodules: recursive
+
+      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
+
+      - name: Build the image (amd64, loaded locally, not pushed)
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6.19.2
+        with:
+          context: .
+          file: Dockerfile
+          load: true
+          push: false
+          tags: seyond-driver:ci
+          cache-from: type=gha,scope=smoke
+          cache-to: type=gha,scope=smoke,mode=max
+
+      - name: Pull the released image for the legacy comparison (optional)
+        id: old
+        env:
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ACTOR: ${{ github.actor }}
+        run: |
+          old=ghcr.io/metrolla-inc/seyond_drivers:v1.0.8-packets
+          if echo "$TOKEN" | docker login ghcr.io -u "$ACTOR" --password-stdin >/dev/null 2>&1 \
+             && docker pull --platform linux/amd64 "$old" >/dev/null 2>&1; then
+            echo "image=$old" >> "$GITHUB_OUTPUT"
+            echo "Legacy mode compared with $old ($(docker image inspect -f '{{index .RepoDigests 0}}' "$old"))." >> "$GITHUB_STEP_SUMMARY"
+          else
+            msg="Could not pull $old with this run's token; legacy mode is compared with the goldens only (tests/legacy/golden, generated from the released entrypoint)."
+            echo "::notice title=released image not readable::$msg"
+            echo "$msg" >> "$GITHUB_STEP_SUMMARY"
+          fi
+          docker logout ghcr.io >/dev/null 2>&1 || true
+
+      - name: Smoke (legacy fleet environments, contract refusals and run, synthetic Robin-W)
+        env:
+          OLD_IMAGE: ${{ steps.old.outputs.image }}
+        run: docker/smoke/smoke.sh seyond-driver:ci "$OLD_IMAGE"
 
   manifest-lint:
     name: manifest-lint (configs + package manifest parse)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
         with:
           python-version: "3.12"
 
       - name: Install lint dependencies
-        run: python -m pip install --upgrade pip pyyaml
+        run: python -m pip install pyyaml==6.0.3
 
       - name: Lint YAML configs and package.xml
         run: |

@@ -1,0 +1,13 @@
+exit 1
+--- stdout
+--- stderr
+seyond-driver: refusing to start: SENSOR_IP='172.168.1.300' is not an IPv4 address; accepted: the sensor's own IPv4 address in dotted decimal without leading zeros, for example 172.168.1.10
+seyond-driver: refusing to start: SENSOR_ID='Dock-West' is not a sensor id; accepted: 1-31 characters, a lowercase letter then lowercase letters, digits or single '_' (it becomes the node's ROS namespace)
+seyond-driver: refusing to start: DATA_PORT='80' is not a usable port; accepted: a whole number 1024-65535 without leading zeros (the UDP port the sensor sends to, default 8010)
+seyond-driver: refusing to start: DEVICE_PORT='70000' is not a usable port; accepted: a whole number 1024-65535 without leading zeros (the sensor's TCP command port, default 8010)
+seyond-driver: refusing to start: HOST_IP='172.168.1.100/40' has no usable prefix length; accepted: the host's IPv4 address on the sensor network, optionally with /1-/32, for example 172.168.1.100/24
+seyond-driver: refusing to start: FRAME_ID='9frame' is not a frame id; accepted: 1-64 characters, letters, digits and '_', not starting with a digit (default seyond)
+seyond-driver: refusing to start: POINTCLOUD_TOPIC='/iv points' is not a ROS topic name; accepted: '/'-separated tokens of letters, digits and single '_', each starting with a letter, absolute (/x) or relative to the SENSOR_ID namespace (default iv_points)
+seyond-driver: refusing to start: TIME_MODE='tai' is not a time mode; accepted, any case: sensor (the default), gps, ptp or ntp (all stamp with the sensor's own time; the sensor must be synchronised that way, this image does not program it)
+seyond-driver: refusing to start: PUBLISH_SCAN='true' is not supported by this image; accepted: unset or false. The Seyond driver publishes PointCloud2 only
+seyond-driver: refusing to start: SEYOND_RUN_DIR='relative' is not an absolute directory path; accepted: an absolute path of letters, digits, '_', '.', '-' and '/' (default /tmp/seyond)

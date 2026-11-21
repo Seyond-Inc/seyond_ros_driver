@@ -1,0 +1,4 @@
+exit 1
+--- stdout
+--- stderr
+seyond-driver: refusing to start: DUAL_LIDAR='True' is not supported with METROLLA_DRIVER_CONTRACT; accepted: unset or false. Run one container per Seyond sensor (each with its own DATA_PORT)

@@ -1,0 +1,23 @@
+{
+  "exec": {
+    "argv": [
+      "ros2",
+      "launch",
+      "seyond",
+      "start_with_config.py",
+      "config_path:=/etc/metrolla-driver/config.yaml"
+    ],
+    "env": {
+      "HOME": "/var/log/ros2",
+      "PATH": "/usr/bin:/bin",
+      "ROS_LOCALHOST_ONLY": "1",
+      "ROS_LOG_DIR": "/var/log/ros2",
+      "TZ": "UTC",
+      "USE_MACADDRESS_NS": "0"
+    }
+  },
+  "exit": 0,
+  "launch_config": null,
+  "stderr": "",
+  "stdout": ""
+}

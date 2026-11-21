@@ -1,0 +1,4 @@
+exit 1
+--- stdout
+--- stderr
+seyond-driver: refusing to start: METROLLA_DRIVER_CONTRACT='yes' is not a contract version this image knows; accepted: 1 (or unset or 0 for the legacy entrypoint)

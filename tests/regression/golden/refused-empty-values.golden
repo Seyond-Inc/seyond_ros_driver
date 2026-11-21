@@ -1,0 +1,6 @@
+exit 1
+--- stdout
+--- stderr
+seyond-driver: refusing to start: LIDAR_MODEL is set but empty; accepted: a Seyond model: robin-w, robin-elite (robin-e1x), robin-e2, falcon-k1, falcon-k2, falcon-k24
+seyond-driver: refusing to start: SENSOR_IP is set but empty; accepted: the sensor's own IPv4 address, for example 172.168.1.10
+seyond-driver: refusing to start: DATA_PORT is set but empty; accepted: a UDP port 1024-65535 (default 8010), or unset it for the default

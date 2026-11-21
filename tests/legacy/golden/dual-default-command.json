@@ -1,0 +1,19 @@
+{
+  "exec": {
+    "argv": [
+      "ros2",
+      "launch",
+      "seyond",
+      "start_with_config.py"
+    ],
+    "env": {
+      "DUAL_LIDAR": "1",
+      "PATH": "/usr/bin:/bin",
+      "ROS_LOCALHOST_ONLY": "1"
+    }
+  },
+  "exit": 0,
+  "launch_config": "/opt/metrolla/seyond/install/seyond/share/seyond/two-config.yaml",
+  "stderr": "",
+  "stdout": ""
+}

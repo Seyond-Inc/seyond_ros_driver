@@ -1,0 +1,4 @@
+exit 1
+--- stdout
+--- stderr
+seyond-driver: refusing to start: TIME_MODE='host' is not supported by this image; accepted: sensor (the default), gps, ptp or ntp. The Seyond driver always stamps clouds with the sensor's clock; synchronise the sensor instead

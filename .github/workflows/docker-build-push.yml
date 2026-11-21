@@ -1,25 +1,36 @@
 name: Docker Build and Push
 
+# Images are pushed for version tags only (v*), never for a branch or a pull request, and a tag
+# that already exists in the registry is never overwritten (tags are immutable). Pull requests
+# build the same image for the same platforms without logging in and without pushing.
+# What changed from the previous workflow: pushes to the main, master and v* branches no
+# longer push ghcr.io/metrolla-inc/seyond_drivers:<branch> (for example :main), and the registry
+# cache tag :latest is no longer written (the build cache is the Actions cache now). A tag push
+# still pushes seyond_drivers:<tag> for linux/amd64 and linux/arm64 with the same secret (GA_TOKEN)
+# and user, runs r2-sync after it as before, and now also records the image digest.
+
 on:
   push:
-    branches:
-      - 'main'
-      - 'master'
-      - 'v*'
     tags:
       - 'v*'
+  pull_request:
 
 permissions:
   contents: read
-  packages: write
+
+concurrency:
+  group: build-and-push-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  build-and-push:
-    runs-on: ubuntu-latest
-
+  build:
+    name: build (pull request, not pushed)
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 300
     steps:
       - name: Free Disk Space (Ubuntu)
-        uses: jlumbroso/free-disk-space@main
+        uses: jlumbroso/free-disk-space@54081f138730dfa15788a46383842cd2f914a1be # v1.3.1
         with:
           tool-cache: true
           android: true
@@ -30,55 +41,156 @@ jobs:
           swap-storage: true
 
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          fetch-depth: 0
+          submodules: recursive
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@c7c53464625b32c7a7e944ae62b3e17d2b600130 # v3.7.0
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
+
+      - name: Build (linux/amd64,linux/arm64, no push)
+        id: build
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6.19.2
+        with:
+          context: .
+          file: Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: false
+          tags: seyond_drivers:pr-${{ github.event.pull_request.number }}
+          cache-from: type=gha,scope=build-and-push
+          cache-to: type=gha,scope=build-and-push,mode=max
+
+      - name: Record what was built
+        run: |
+          {
+            echo "Built Dockerfile for linux/amd64,linux/arm64, not pushed."
+            echo "Build digest (local, not a registry digest): ${{ steps.build.outputs.digest }}"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  build-and-push:
+    name: build and push (version tag)
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 300
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      tag: ${{ steps.tag.outputs.tag }}
+      digest: ${{ steps.build.outputs.digest }}
+
+    steps:
+      - name: Free Disk Space (Ubuntu)
+        uses: jlumbroso/free-disk-space@54081f138730dfa15788a46383842cd2f914a1be # v1.3.1
+        with:
+          tool-cache: true
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: true
+          docker-images: false
+          swap-storage: true
+
+      - name: Checkout code
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           submodules: recursive
           fetch-depth: 0
           token: ${{ secrets.GA_TOKEN }}
 
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
+        uses: docker/setup-qemu-action@c7c53464625b32c7a7e944ae62b3e17d2b600130 # v3.7.0
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
 
       - name: Log in to GitHub Container Registry
-        uses: docker/login-action@v3
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3.7.0
         with:
           registry: ghcr.io
           username: castaway2000
           password: ${{ secrets.GA_TOKEN }}
 
-      - name: Compute sanitized Docker tag
+      - name: Compute the image tag from the git tag
         id: tag
         shell: bash
+        env:
+          REF_TYPE: ${{ github.ref_type }}
+          REF_NAME: ${{ github.ref_name }}
         run: |
-          REF_NAME="${{ github.ref_name }}"
-          # replace "/" with "-", lowercase, and collapse any disallowed characters
+          if [ "$REF_TYPE" != tag ]; then
+            echo "refusing to push: $REF_NAME is a $REF_TYPE, images are pushed for tags only" >&2
+            exit 1
+          fi
+          # replace "/" with "-", lowercase, and collapse any disallowed characters (as before)
           SAFE_TAG="${REF_NAME//\//-}"
           SAFE_TAG="${SAFE_TAG,,}"
           SAFE_TAG="$(echo "$SAFE_TAG" | sed -E 's/[^a-z0-9._-]+/-/g; s/^-+|-+$//g')"
           echo "tag=$SAFE_TAG" >> "$GITHUB_OUTPUT"
           echo "Using tag: $SAFE_TAG"
 
-      - name: Build and push Docker image for amd64 and arm64
-        uses: docker/build-push-action@v4
+      - name: Refuse to overwrite an existing image tag
+        env:
+          IMAGE: ghcr.io/metrolla-inc/seyond_drivers:${{ steps.tag.outputs.tag }}
+        run: |
+          if docker buildx imagetools inspect "$IMAGE" >/dev/null 2>&1; then
+            echo "::error::$IMAGE already exists; image tags are immutable. Cut a new git tag instead."
+            exit 1
+          fi
+          echo "$IMAGE does not exist yet"
+
+      - name: Build and push (linux/amd64,linux/arm64)
+        id: build
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6.19.2
         with:
           context: .
           file: Dockerfile
           platforms: linux/amd64,linux/arm64
           push: true
           tags: ghcr.io/metrolla-inc/seyond_drivers:${{ steps.tag.outputs.tag }}
-          cache-from: type=registry,ref=ghcr.io/metrolla-inc/seyond_drivers:latest
-          cache-to: type=registry,ref=ghcr.io/metrolla-inc/seyond_drivers:latest,mode=max
+          labels: |
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.version=${{ steps.tag.outputs.tag }}
+          cache-from: type=gha,scope=build-and-push
+          cache-to: type=gha,scope=build-and-push,mode=max
+
+      - name: Record the pushed digest
+        env:
+          IMAGE: ghcr.io/metrolla-inc/seyond_drivers:${{ steps.tag.outputs.tag }}
+          DIGEST: ${{ steps.build.outputs.digest }}
+        run: |
+          printf '%s@%s\n' "$IMAGE" "$DIGEST" | tee image-digest.txt
+          {
+            echo "Pushed \`$IMAGE\`"
+            echo ""
+            echo "Digest: \`$DIGEST\` (pin releases by this digest)"
+            echo "Commit: ${{ github.sha }}"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Keep the digest with the run
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: image-digest
+          path: image-digest.txt
+          retention-days: 90
 
   r2-sync:
     # Sync the built image into the openBalena registry storage (Cloudflare R2)
     # so fleet releases can reference it with zero-byte blob mounts instead of
     # re-uploading through the shop uplink. NO-OP until the org secrets
     # R2_ACCESS_KEY_ID / R2_SECRET_ACCESS_KEY / R2_ENDPOINT are configured.
+    # Only after a tag push (the job it needs is skipped otherwise).
     needs: build-and-push
-    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      packages: read  # it may pull from ghcr.io with GITHUB_TOKEN, as before
     steps:
       - name: Check R2 sync configured
         id: r2
