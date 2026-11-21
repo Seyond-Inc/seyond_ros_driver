@@ -1,0 +1,22 @@
+{
+  "exec": {
+    "argv": [
+      "ros2",
+      "launch",
+      "seyond",
+      "start_with_config.py"
+    ],
+    "env": {
+      "FASTRTPS_DEFAULT_PROFILES_FILE": "/etc/metrolla/fastdds.xml",
+      "METROLLA_DRIVER_CONTRACT": "0",
+      "PATH": "/usr/bin:/bin",
+      "ROS_LOCALHOST_ONLY": "1",
+      "ROS_LOG_DIR": "/var/log/ros2",
+      "USE_MACADDRESS_NS": "0"
+    }
+  },
+  "exit": 0,
+  "launch_config": "/opt/metrolla/seyond/install/seyond/share/seyond/config.yaml",
+  "stderr": "",
+  "stdout": ""
+}

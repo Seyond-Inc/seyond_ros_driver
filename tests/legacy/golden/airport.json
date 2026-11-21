@@ -1,0 +1,18 @@
+{
+  "exec": {
+    "argv": [
+      "/bin/bash",
+      "-lc",
+      "sleep 10; source /opt/ros/jazzy/setup.bash && ros2 launch seyond start.py continue_live:=True"
+    ],
+    "env": {
+      "PATH": "/usr/bin:/bin",
+      "ROS_LOCALHOST_ONLY": "1",
+      "USE_MACADDRESS_NS": "0"
+    }
+  },
+  "exit": 0,
+  "launch_config": null,
+  "stderr": "",
+  "stdout": ""
+}

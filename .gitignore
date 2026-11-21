@@ -51,3 +51,5 @@ src/CMakeLists.txt
 .catkin_workspace
 *.deb
 *.ddeb
+__pycache__/
+.pytest_cache/

@@ -1,0 +1,20 @@
+{
+  "exec": {
+    "argv": [
+      "/bin/bash",
+      "-lc",
+      "sleep 10; source /opt/ros/jazzy/setup.bash && ros2 launch seyond start.py continue_live:=True"
+    ],
+    "env": {
+      "FASTRTPS_DEFAULT_PROFILES_FILE": "/etc/metrolla/fastdds.xml",
+      "PATH": "/usr/bin:/bin",
+      "ROS_LOCALHOST_ONLY": "1",
+      "ROS_LOG_DIR": "/var/log/ros2",
+      "USE_MACADDRESS_NS": "0"
+    }
+  },
+  "exit": 0,
+  "launch_config": null,
+  "stderr": "",
+  "stdout": ""
+}
