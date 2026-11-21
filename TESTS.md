@@ -29,12 +29,10 @@ starts passing errors the run, forcing the marker's removal).
    the start-retry loop and the fatal-error reconnect in `driver_lidar.cc`
    are gated on `continue_live`.
 
-CI: `.github/workflows/regression-gate.yml` — `unit` (Python 3.12, pytest +
-pyyaml) and `manifest-lint` (YAML configs parse with required lidar keys +
-`package.xml` parses). **Deliberately no colcon/driver build job**: the
-driver links the vendored Seyond SDK (`.deb` / submodule, ROS 2 Jazzy
-toolchain) which is not reasonable to stand up in a GitHub runner — a
-containerized build-smoke gate is **Phase-5 work**.
+CI: `.github/workflows/regression-gate.yml` — `unit (launch/config contract tests)`
+(Python 3.12, pytest + pyyaml, shellcheck, hadolint), `regression` (goldens and past bugs),
+`smoke` (builds the image from source with the SDK submodule and runs `docker/smoke/smoke.sh`)
+and `manifest-lint` (YAML configs parse with required lidar keys + `package.xml` parses).
 
 ## Suite inventory
 
@@ -43,7 +41,19 @@ containerized build-smoke gate is **Phase-5 work**.
 | `tests/test_dual_lidar_env.py` (9 tests) | unit, ROS-free | Bug 1: source-level pin that the always-true `is True or 1` pattern (and the `environ.get(...) is True` bug class) is absent; DUAL_LIDAR truth table (unset/`"0"`/`""`/`"false"` ⇒ single config, `"1"`/`"true"` ⇒ dual) against the `_env_flag` helper lifted out of the launch file via AST; missing-two-config fallback guard (no crash-loop) | `python3 -m pytest tests/test_dual_lidar_env.py -v` | < 1 s | Python 3.12, pytest |
 | `tests/test_cmake_install.py` (3 tests) | unit, ROS-free | Bug 2: `config/two-config.yaml` present in an `install(FILES … DESTINATION share/…)` block; controls: `config.yaml` and `start_with_config.py` are installed | `python3 -m pytest tests/test_cmake_install.py -v` | < 1 s | Python 3.12, pytest |
 | `tests/test_two_config_topics.py` (3 tests) | unit, ROS-free | Bug 3: `two-config.yaml` exists; lidar-2 `frame_topic` is exactly `/iv_points2` (and explicitly not the `/iv_point2` typo); control: lidar-1 stays `/iv_points` | `python3 -m pytest tests/test_two_config_topics.py -v` | < 1 s | Python 3.12, pytest, pyyaml |
-| `tests/test_continue_live.py` (4 tests) | unit, ROS-free | Bug 4: `continue_live: true` in `config.yaml` (and `two-config.yaml` when present); source-level pins of BOTH recovery gates in `driver_lidar.cc` (start-retry loop + fatal-error reconnect), documenting the zombie mechanism | `python3 -m pytest tests/test_continue_live.py -v` | < 1 s | Python 3.12, pytest, pyyaml |
+| `tests/test_continue_live.py` (6 tests) | unit, ROS-free | Bug 4: `continue_live: true` in `config.yaml` and `two-config.yaml`; source pin of the start-retry gate in `driver_lidar.cc`; the fatal-error reconnect is gone since the 2026-08-31 vendor sync (upstream `18c5c93`; the old assertion failed on main from then on and was wrong, not the code) and UDP data recovers in the SDK's read loop ("recover from network timeout"); shipped configs use UDP data | `python3 -m pytest tests/test_continue_live.py -v` | < 1 s | Python 3.12, pytest, pyyaml, SDK submodule |
+| `tests/legacy/` (14 tests) | unit + regression | Legacy mode = the released image: `entrypoint.sh` and `entrypoint-unified.sh` are the v1.0.8-packets files plus the opt-in block only; every fleet environment/command of `cases/*.env` (bellagio-retail, relay-yard, flood2, airport, bottlingplant x2, dual flags, metrolla-edge's reference template, the switch at 0/empty) gives the golden recorded from the released entrypoint (exec'd argv and environment, output, the YAML `start_with_config.py` loads) | `python3 -m pytest tests/legacy -v` | < 1 s | Python, pytest |
+| `tests/unit/` (environment contract, vendor contract, synthetic sensor) | unit | `docker/seyond_env.py`: every accepted value and refusal, `run`/`check`/`selfcheck`; every rendered key is read by `yaml_tools.hpp` with that type, defaults equal the vendor `config.yaml` except the relative topics, node name/paths/Dockerfile layout; `fake_seyond.py` packets against the SDK's packed structs and CRC32C | `python3 -m pytest tests/unit -v` | < 1 s | Python, pytest, pyyaml, SDK submodule |
+| `tests/regression/` (goldens + past bugs) | regression | `check` output and refusal messages for `cases/*.env` against `golden/*.golden` (`REGEN=1` to regenerate); past bugs in contract mode: continue_live/UDP for every accepted environment, DUAL_LIDAR true refused, the node gets the written file, images without the contract refuse the switch | `python3 -m pytest tests/regression -v` | < 1 s | Python, pytest, pyyaml |
+| `docker/smoke/smoke.sh IMAGE [OLD_IMAGE]` | smoke | Builds on the image: image facts; legacy fleet environments in the image (and against `seyond_drivers:v1.0.8-packets` when the run can pull it); contract `check`/refusals equal the goldens; a contract run as uid 97000, read-only root, tmpfs `/tmp`, cap-drop ALL with no sensor (keeps retrying, in the ROS graph, clean SIGTERM); a synthetic Robin-W `.inno_pc` (`fake_seyond.py`) replayed through `seyond_node` from the contract's config (only the file source added): 3 PointCloud2 on `/west/iv_points`, every point 10 m, stamps on the synthetic frames | CI job `smoke` | ~30-60 min cold | Docker |
+
+No Seyond recording exists in Metrolla's repos, so the packets are synthetic, written from the
+SDK's packet definitions. On 2026-11-21 they were also checked locally (not in CI): every packet
+passed the SDK's `InnoDataPacketUtils::check_data_packet`, and `seyond_node` built with colcon in a
+conda RoboStack Jazzy environment (not Ubuntu's packages, not the image) replayed them from a
+contract-rendered config: 2,000 points per cloud at 10.000 m on `/west/iv_points`, frame
+`seyond_west`. Not exercised: a real sensor, the live TCP/UDP session with a sensor, PTP time,
+the -hb and -unified images (built by their workflows only), arm64 (built, never run).
 
 Run everything CI runs, locally:
 
@@ -51,9 +61,10 @@ Run everything CI runs, locally:
 python3 -m pytest tests/ -v -ra
 ```
 
-Expected on `main` (pre-merge of v1.0.7-dual): **5 passed, 2 skipped,
-12 xfailed**. Expected once `feat/dualdriver` merges: **19 passed** (the
-xfail conditions self-clear; verified against `origin/feat/dualdriver`).
+History: before `feat/dualdriver` merged, **5 passed, 2 skipped, 12 xfailed**; after (main
+since 2026-08-31) 19 tests, of which `test_fatal_error_reconnect_gated_on_continue_live` failed
+until C9 replaced it. Expected with C9 (`feat/driver-contract`): **159 passed** (no skip, no
+xfail), `tests/regression` and `tests/legacy` included.
 
 ## Outcome semantics
 
