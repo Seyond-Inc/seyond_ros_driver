@@ -1,0 +1,62 @@
+# Tests for the vendor watch (Metrolla backlog C22): unit, regression and smoke tiers.
+# Identical in every driver fork.
+name: vendor-watch-tests
+
+on:
+  pull_request:
+    paths:
+      - ".github/vendor-watch.json"
+      - ".github/vendor-watch/**"
+      - ".github/workflows/vendor-watch*.yml"
+  push:
+    branches-ignore:
+      - main
+      - master
+    paths:
+      - ".github/vendor-watch.json"
+      - ".github/vendor-watch/**"
+      - ".github/workflows/vendor-watch*.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  unit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803  # v6.1.0
+        with:
+          persist-credentials: false
+          lfs: false
+      - name: Script logic against throwaway git repositories
+        working-directory: .github/vendor-watch
+        run: python3 -m unittest -v test_vendor_watch.Unit test_vendor_watch.UnitIssue
+
+  regression:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803  # v6.1.0
+        with:
+          persist-credentials: false
+          lfs: false
+      - name: Golden issue title, body, closing comment and report
+        working-directory: .github/vendor-watch
+        run: python3 -m unittest -v test_vendor_watch.Regression
+
+  smoke:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803  # v6.1.0
+        with:
+          persist-credentials: false
+          lfs: false
+          submodules: false
+      - name: Dry run against the real vendor repositories (no token, no issue)
+        working-directory: .github/vendor-watch
+        env:
+          VENDOR_WATCH_SMOKE: "1"
+        run: python3 -m unittest -v test_vendor_watch.Smoke

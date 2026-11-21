@@ -1,0 +1,15 @@
+vendor-driver: https://github.com/Vendor/driver.git @ master
+  base aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa (recorded in config)
+  tip  bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+  state behind: 12 commits behind, 2 new tags
+  new tags: v2.1.0 v2.0.0
+  compare: https://github.com/Vendor/driver/compare/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa...bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+vendor-sdk: https://github.com/Vendor/sdk.git @ main
+  base eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee (submodule sdk at HEAD)
+  tip  eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
+  state up-to-date: up to date
+vendor-tools: https://github.com/Vendor/tools.git @ main
+  base aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa (recorded in config)
+  tip  bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+  state diverged: base is not on main (2 base-only commits), 1 commit behind
+Vendor firmware SDK: not checked (not public)

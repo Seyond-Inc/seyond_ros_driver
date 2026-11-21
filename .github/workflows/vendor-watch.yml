@@ -1,0 +1,32 @@
+# Weekly comparison of this fork with its vendor repositories (Metrolla backlog C22).
+# Identical in every driver fork; the per-repo settings are in .github/vendor-watch.json.
+# The schedule only runs from the default branch.
+name: vendor-watch
+
+on:
+  schedule:
+    - cron: "23 6 * * 1"  # Mondays 06:23 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: vendor-watch
+  cancel-in-progress: false
+
+jobs:
+  compare:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803  # v6.1.0
+        with:
+          persist-credentials: false
+          lfs: false
+          submodules: false
+      - name: Compare with the vendor and update the issue
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python3 .github/vendor-watch/vendor_watch.py --config .github/vendor-watch.json --issue
