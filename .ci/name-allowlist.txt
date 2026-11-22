@@ -1,0 +1,3 @@
+# Deny-listed text that stays, one rule per line:  <path glob> | <regex or *> | <reason>
+# A hit is allowed when it lies inside a match of the regex on a line of a matching file
+# ('*' = the whole file). Keep each rule as narrow as possible and say why the text cannot change.

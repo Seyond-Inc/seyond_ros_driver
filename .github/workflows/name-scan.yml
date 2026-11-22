@@ -1,0 +1,21 @@
+name: Name scan
+
+# F5: no customer or site names in tracked files. The deny-list is .ci/name-denylist.txt, the kept
+# hits (each with its reason) are .ci/name-allowlist.txt.
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  name-scan:
+    name: name-scan (no customer names)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Scanner self-test
+        run: python3 .ci/name_scan.py --self-test
+      - name: Scan tracked files
+        run: python3 .ci/name_scan.py
