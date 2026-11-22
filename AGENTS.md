@@ -30,7 +30,7 @@ for Metrolla edge units:
   the device (`1`/`true` ⇒ `two-config.yaml`; unset/`0`/`""`/`false` ⇒
   `config.yaml`).
 - History: `v1.0.5-dual`/`v1.0.6-dual` were broken in the field (crash-loop
-  at niagra-bottling precise-doorway, stopgap patched in-container);
+  at plant1 precise-doorway, stopgap patched in-container);
   `v1.0.7-dual` (commits `4a4e5f2`/`e7f10f0`, branch `feat/dualdriver`) is
   the repo fix. Registry blobs live in Cloudflare R2 — pushes are capped by
   a ~40 Mbps uplink; never run parallel/duplicate pushes.

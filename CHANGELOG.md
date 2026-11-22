@@ -81,7 +81,7 @@
 ### Changed
 - Updated the submodule seyond_sdk from v3.103.4 to release-3.103.13.
 - Synced the fork with upstream Seyond-Inc/seyond_ros_driver main (4 commits),
-  bringing v1.0.4pre. The significant item for the Bellagio deliver-stage drops is
+  bringing v1.0.4pre. The significant item for the Resort deliver-stage drops is
   "Added async publish thread to decouple pointcloud publishing from data callback" --
   the blocking data-callback publish is the mechanism behind the measured 465-725 ms
   stalls that overflow the SDK deliver queue.
