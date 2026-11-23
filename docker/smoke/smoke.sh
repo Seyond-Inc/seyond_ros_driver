@@ -150,10 +150,17 @@ docker run --rm "${CONTRACT_ENV[@]}" "$IMAGE" check | sed '$d' > "$WORK/expected
 docker exec "$NAME" cat /tmp/seyond/config.yaml > "$WORK/actual.yaml"
 expect "/tmp/seyond/config.yaml in the container equals check's render" \
     diff -u "$WORK/expected.yaml" "$WORK/actual.yaml"
-docker run --rm "${RESTRICT[@]}" --entrypoint bash "$IMAGE" -c \
-    'source /opt/ros/jazzy/setup.bash && ros2 node list --no-daemon' > "$WORK/nodes.txt" 2>&1 || true
-cat "$WORK/nodes.txt"
-expect "node /east/seyond in the ROS graph" grep -qx /east/seyond "$WORK/nodes.txt"
+# The observer needs its own DDS discovery time; sleeping before creating it does not help.
+# Keep one participant alive while polling, and retain the exact node-name assertion.
+if docker run --rm "${RESTRICT[@]}" -v "$HERE:/smoke:ro" --entrypoint bash "$IMAGE" -c \
+    'source /opt/ros/jazzy/setup.bash && timeout --kill-after=5s 65s python3 /smoke/check_node.py /east/seyond --timeout 60' \
+    > "$WORK/nodes.txt" 2>&1; then
+    cat "$WORK/nodes.txt"
+    expect "node /east/seyond in the ROS graph" grep -qx /east/seyond "$WORK/nodes.txt"
+else
+    cat "$WORK/nodes.txt"
+    fail "node /east/seyond in the ROS graph: discovery check failed (60 s deadline; 65 s process limit)"
+fi
 docker stop -t 10 "$NAME" > /dev/null
 code=$(docker inspect -f '{{.State.ExitCode}}' "$NAME")
 docker logs "$NAME" > "$WORK/driver.log" 2>&1
