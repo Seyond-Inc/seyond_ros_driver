@@ -202,7 +202,7 @@ class DriverLidar {
   int32_t lidar_handle_{-1};
   int64_t current_frame_id_{-1};
   std::vector<uint8_t> data_buffer;
-  double current_ts_start_;
+  double current_pkt_ts_us_;  // start time of the packet being parsed, in microseconds
   double frame_start_ts_;
 
   // transform

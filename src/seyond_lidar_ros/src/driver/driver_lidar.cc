@@ -31,6 +31,7 @@ USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <assert.h>
 
+#include <algorithm>
 #include <thread>
 #include <utility>
 
@@ -552,8 +553,10 @@ void DriverLidar::convert_and_parse(const InnoDataPacket *pkt) {
 }
 
 void DriverLidar::data_packet_parse(const InnoDataPacket *pkt) {
-  // calculate the point timestamp
-  current_ts_start_ = pkt->common.ts_start_us / us_in_second_c;
+  // Start time of this packet, kept in microseconds exactly as the SDK reports
+  // it. Converting to seconds and back would only risk losing precision; the
+  // point offsets below are differences against frame_start_ts_, in the same unit.
+  current_pkt_ts_us_ = pkt->common.ts_start_us;
   // adapt different data structures form different lidar
   if (CHECK_EN_XYZ_POINTCLOUD_DATA(pkt->type)) {
     const InnoEnXyzPoint *pt =
@@ -596,7 +599,20 @@ void DriverLidar::point_xyz_data_parse(bool is_use_refl, uint32_t point_num, Poi
     point.scan_idx = point_ptr->scan_idx;
     point.flags = point_ptr->channel | roi | (point_ptr->facet << 3);
     point.is_2nd_return = point_ptr->is_2nd_return;
-    point.timestamp = point_ptr->ts_10us / ten_us_in_second_c + current_ts_start_;
+    // Offset of this point from the start of the frame, in nanoseconds.
+    //
+    // ts_start_us is an epoch time in microseconds held in a double, so near
+    // 1.8e15 it is only representable in steps of 0.25 us. A packet of this
+    // frame can therefore report a ts_start_us one step below frame_start_ts_,
+    // making the difference -0.25 us. Casting that negative value to uint32_t
+    // is undefined behaviour, and in practice wrapped around to 2^32 - 250,
+    // i.e. an apparent offset of about 4.29 seconds. Clamp into range instead:
+    // a point measured a fraction of a microsecond before the nominal frame
+    // start belongs at offset 0.
+    const double point_offset_ns =
+        ((current_pkt_ts_us_ - frame_start_ts_) + point_ptr->ts_10us * 10.0) * 1000.0;
+    point.timestamp = static_cast<uint32_t>(
+        std::min(std::max(point_offset_ns, 0.0), static_cast<double>(UINT32_MAX)));
 #endif
     coordinate_transfer(&point, param_.coordinate_mode, point_ptr->x, point_ptr->y, point_ptr->z);
     pcl_pc_ptr->points.push_back(point);
